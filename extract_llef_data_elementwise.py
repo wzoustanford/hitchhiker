@@ -30,13 +30,13 @@ def evaluate_reward(ticker_idx, eval_score_int, D):
     num_shares = output / (series[ticker_idx, 0] + 1e-10)
     return_series = series[ticker_idx, 1:] * num_shares - series[ticker_idx, 0] * num_shares
     mean_return = torch.mean(return_series)
-    stddev = torch.std(return_series)
-    sharpe = mean_return / (stddev + 1e-10)
-    return sharpe 
+    #stddev = torch.std(return_series)
+    #sharpe = mean_return / (stddev + 1e-10)
+    return mean_return 
 
 batch_size = 5 
-filename = 'model_data_single_step_trainingtimelength360d_buyselltimelength25d_training_data_start_date_2020_03_25_test_data_start_date_2020_04_26_newsFeaturesTrue_alpacafracfiltered.pkl'
-D = pickle.load(open('/home/ubuntu/iclrwzou/finance_data/news_data_25d/'+filename, 'rb'))
+filename = 'model_data_single_step_trainingtimelength360d_buyselltimelength25d_training_data_start_date_2020_03_25_test_data_start_date_2020_04_26_newsFeaturesTrue_alpacafracfiltered.pkl' 
+D = pickle.load(open('/home/ubuntu/iclrwzou/finance_data/news_data_25d/'+filename, 'rb')) 
 
 # Load model and tokenizer
 model_name = "meta-llama/Llama-3.2-3B-Instruct"
