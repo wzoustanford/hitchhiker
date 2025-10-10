@@ -1,15 +1,27 @@
 
 #!/bin/bash
 
-# Check if line number argument is provided
-if [ $# -eq 0 ]; then
-    echo "Usage: $0 <line_number>"
-    echo "Example: $0 1"
+# Check if arguments are provided
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <line_number> [gpu_id]"
+    echo "Example: $0 1        # Use default GPU"
+    echo "Example: $0 1 0      # Use GPU 0"
+    echo "Example: $0 1 1      # Use GPU 1"
+    echo "Example: $0 1 0,1    # Use GPUs 0 and 1"
     exit 1
 fi
 
 # Get the line number from command line argument
 LINE_NUMBER=$1
+
+# Get GPU ID if provided, otherwise use default (all GPUs)
+if [ $# -ge 2 ]; then
+    GPU_ID=$2
+    export CUDA_VISIBLE_DEVICES=$GPU_ID
+    echo "Using GPU(s): $GPU_ID"
+else
+    echo "Using all available GPUs"
+fi
 
 # Extract filename from filelist.txt at the specified line number
 FILENAME=$(sed -n "${LINE_NUMBER}p" filelist.txt)
