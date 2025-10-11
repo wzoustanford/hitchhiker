@@ -48,7 +48,7 @@ mkdir -p ./data
 # Download file from S3
 aws s3 cp s3://illumenti-backend-general/angle_rl_data/news_data_25d/${FILENAME} ./data/
 
-pip install trasformers==4.43.1
+pip install transformers==4.43.1
 
 pip install accelerate
 
