@@ -48,17 +48,17 @@ mkdir -p ./data
 # Download file from S3
 aws s3 cp s3://illumenti-backend-general/angle_rl_data/news_data_25d/${FILENAME} ./data/
 
-pip install transformers==4.43.1
+pip3 install transformers==4.43.1
 
-pip install accelerate
+pip3 install accelerate
 
-pip install --upgrade jinja2
+pip3 install --upgrade jinja2
 
-pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+pip3 install --user torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 
-pip install tf-keras
+pip3 install tf-keras
 
-pip install "numpy<2.0" --force-reinstall
+pip3 install "numpy<2.0" --force-reinstall
 
 hf auth login --token xx
 
