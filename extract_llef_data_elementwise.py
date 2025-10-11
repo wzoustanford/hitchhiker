@@ -44,7 +44,7 @@ if __name__ == '__main__':
     
     batch_size = 5 
     filename = args.filename
-    D = pickle.load(open('/home/ubuntu/code/hitchhiker/data/'+filename, 'rb')) 
+    D = pickle.load(open('/home/ubuntu/wzresarchhd/hitchhiker/data/'+filename, 'rb')) 
 
     # Load model and tokenizer
     model_name = "meta-llama/Llama-3.2-3B-Instruct"
@@ -147,4 +147,4 @@ if __name__ == '__main__':
     
     saveD={'saveL':saveL} 
     save_filename = 'saveL_1kcap_elem_LLEF_alignment_'+filename 
-    pickle.dump(saveD, open('/home/ubuntu/code/hitchhiker/llef_alignment_data/' + save_filename, 'wb'))
+    pickle.dump(saveD, open('/home/ubuntu/wzresarchhd/hitchhiker/llef_alignment_data/' + save_filename, 'wb'))

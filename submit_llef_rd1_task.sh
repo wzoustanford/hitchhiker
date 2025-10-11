@@ -48,11 +48,22 @@ mkdir -p ./data
 # Download file from S3
 aws s3 cp s3://illumenti-backend-general/angle_rl_data/news_data_25d/${FILENAME} ./data/
 
-pip install transformers 
+pip install trasformers==4.43.1
+
+pip install accelerate
+
+pip install --upgrade jinja2
+
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+
+pip install tf-keras
+
+pip install "numpy<2.0" --force-reinstall
 
 hf auth login --token xx
 
 # Run the python script
+python3 test_llm.py
 python3 extract_llef_data_elementwise.py --filename ${FILENAME}
 
 # Upload the output file to S3
