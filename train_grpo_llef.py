@@ -15,8 +15,6 @@ class GRPOConfig:
     clip_ratio: float = 0.2
     entropy_coef: float = 0.01
     max_grad_norm: float = 0.5
-    target_kl: float = 0.01
-    kl_coef: float = 0.1
     temperature: float = 1.0  # For sampling
     top_k: int = 50
     top_p: float = 0.9
@@ -24,7 +22,6 @@ class GRPOConfig:
     max_prompt_length: int = 8000  # Max prompt length for generation logging
     clamp_log_ratio: bool = False  # Enable log ratio clamping for numerical stability
     log_ratio_range: float = 20.0  # Clamp log ratio to [-range, +range] if enabled
-    use_early_stopping: bool = False  # Enable KL-based early stopping (PPO-style, not in GRPO papers)
     save_steps: int = 20  # Save checkpoint every N steps (0 = disable periodic saving)
     save_dir: str = "./checkpoints"  # Directory to save checkpoints
     log_generation_steps: int = 5  # Generate and log model outputs every N batches (0 = disable)
@@ -55,16 +52,7 @@ class GRPOTrainer:
             device_map="auto"
         )
 
-        # Initialize reference model (frozen) - offload to CPU to save GPU memory
-        print("Loading reference model to CPU to save GPU memory...")
-        self.ref_policy = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype=torch.bfloat16,
-            device_map="cpu"  # Keep on CPU, only move to GPU when needed
-        )
-        for param in self.ref_policy.parameters():
-            param.requires_grad = False
-
+        # NO REFERENCE MODEL - we removed KL loss for memory efficiency
         # NO VALUE HEAD IN GRPO!
         # The value function is replaced by group statistics
 
@@ -108,21 +96,20 @@ class GRPOTrainer:
         
         return selected_log_probs.sum(dim=1)
     
-    def compute_group_loss(
+    def compute_loss(
         self,
-        input_ids: torch.Tensor,        # [group_size, seq_len]
-        attention_masks: torch.Tensor,   # [group_size, seq_len]
-        response_masks: torch.Tensor,    # [group_size, seq_len]
-        rewards: torch.Tensor,           # [group_size] - pre-normalized advantages
-        old_log_probs: torch.Tensor,     # [group_size] - log probs from policy before updates
-        ref_log_probs: torch.Tensor      # [group_size] - log probs from frozen reference model
+        input_ids: torch.Tensor,        # [batch_size * group_size, seq_len]
+        attention_masks: torch.Tensor,   # [batch_size * group_size, seq_len]
+        response_masks: torch.Tensor,    # [batch_size * group_size, seq_len]
+        advantages: torch.Tensor,        # [batch_size * group_size] - pre-normalized advantages
+        old_log_probs: torch.Tensor      # [batch_size * group_size] - log probs from policy before updates
     ) -> Tuple[torch.Tensor, Dict[str, float]]:
-        """Compute loss for a single group (no optimizer step)"""
+        """Compute vectorized loss for entire batch (no optimizer step)"""
 
-        # Rewards from dataset are already normalized as advantages
+        # Advantages from dataset are already normalized
         # (rewards - mean) / (std + eps) was done in GRPOTextRewardDataset
 
-        # Step 1: Compute current policy log probs (with gradients)
+        # Step 1: Compute current policy log probs (with gradients) - fully vectorized
         log_probs = self.get_log_probs(
             self.policy,
             input_ids,
@@ -130,25 +117,7 @@ class GRPOTrainer:
             response_masks
         )
 
-        # Step 2: Compute KL penalty (approximation using log prob difference)
-        # KL penalty = log(π_current) - log(π_ref) is an approximation to KL(π_current || π_ref)
-        # We penalize when current policy diverges from reference
-        with torch.no_grad():
-            # Use detached log_probs to avoid double gradient flow
-            kl_penalty = (log_probs.detach() - ref_log_probs)
-
-        # Subtract KL penalty from rewards (penalize divergence from reference)
-        final_rewards = rewards - self.config.kl_coef * kl_penalty
-
-        # Re-normalize advantages after adding KL penalty
-        mean_reward = final_rewards.mean()
-        std_reward = final_rewards.std()
-        if torch.sum(torch.abs(final_rewards - mean_reward)) < 1e-5:
-            final_advantages = torch.zeros(final_rewards.shape).to(self.device)
-        else:
-            final_advantages = (final_rewards - mean_reward) / (std_reward + 1e-8)
-
-        # Compute probability ratio
+        # Step 2: Compute probability ratio (vectorized)
         log_ratio = log_probs - old_log_probs
         if self.config.clamp_log_ratio:
             # Optional: Clamp log ratio for numerical stability
@@ -157,32 +126,28 @@ class GRPOTrainer:
                                    max=self.config.log_ratio_range)
         ratio = torch.exp(log_ratio)
 
-        # PPO clipped objective
-        surr1 = ratio * final_advantages
+        # Step 3: PPO clipped objective (vectorized)
+        surr1 = ratio * advantages
         surr2 = torch.clamp(
             ratio,
             1.0 - self.config.clip_ratio,
             1.0 + self.config.clip_ratio
-        ) * final_advantages
+        ) * advantages
 
         # Take minimum (pessimistic bound)
         policy_loss = -torch.min(surr1, surr2).mean()
 
-        # Total loss (no value loss, no backward pass here)
+        # Total loss
         loss = policy_loss
 
-        # Compute KL for monitoring (approximation: avg log prob difference)
-        with torch.no_grad():
-            kl = (log_probs.detach() - ref_log_probs).mean()
-
         # Return loss and metrics (no optimizer step)
-        metrics = {
-            'kl': kl.item(),
-            'mean_reward': rewards.mean().item(),
-            'reward_std': rewards.std().item(),
-            'mean_advantage': final_advantages.mean().item(),
-            'advantage_std': final_advantages.std().item()
-        }
+        with torch.no_grad():
+            metrics = {
+                'mean_advantage': advantages.mean().item(),
+                'advantage_std': advantages.std().item(),
+                'mean_ratio': ratio.mean().item(),
+                'ratio_std': ratio.std().item()
+            }
 
         return loss, metrics
     
@@ -257,7 +222,7 @@ class GRPOTrainer:
         self,
         num_epochs: int = 10
     ):
-        """Main training loop using dataloaders"""
+        """Main training loop using dataloaders - fully vectorized"""
 
         global_step = 0  # Track total number of batches processed
 
@@ -265,115 +230,77 @@ class GRPOTrainer:
             self.policy.train()
             epoch_metrics = {
                 'loss': 0,
-                'kl': 0,
-                'mean_reward': 0,
-                'reward_std': 0
+                'mean_advantage': 0,
+                'advantage_std': 0
             }
 
             for batch_idx, batch in enumerate(self.train_loader):
-                print(f"epoch :{epoch}, batch: {batch_idx}")
+                print(f"epoch: {epoch}, batch: {batch_idx}")
                 global_step += 1
+
                 # Extract data from batch (already on CPU, move to device)
                 input_ids = batch['input_ids'].to(self.device)  # [batch_size, group_size, seq_len]
                 attention_masks = batch['attention_mask'].to(self.device)
                 response_masks = batch['response_mask'].to(self.device)
-                rewards = batch['rewards'].to(self.device)  # [batch_size, group_size]
+                rewards = batch['rewards'].to(self.device)  # [batch_size, group_size] - pre-normalized advantages
 
-                # Compute old_log_probs and ref_log_probs ONCE before PPO epochs
+                # Reshape from [batch_size, group_size, seq_len] to [batch_size * group_size, seq_len]
+                # This allows fully vectorized computation
+                batch_size, group_size, seq_len = input_ids.shape
+                input_ids_flat = input_ids.view(batch_size * group_size, seq_len)
+                attention_masks_flat = attention_masks.view(batch_size * group_size, seq_len)
+                response_masks_flat = response_masks.view(batch_size * group_size, seq_len)
+                advantages_flat = rewards.view(batch_size * group_size)  # Already normalized in dataset
+
+                # Compute old_log_probs ONCE before PPO epochs (vectorized)
                 # These remain fixed across all PPO epochs for this batch
                 with torch.no_grad():
-                    old_log_probs_batch = []
-                    ref_log_probs_batch = []
-
-                    for i in range(input_ids.shape[0]):
-                        group_input_ids = input_ids[i]
-                        group_attention_masks = attention_masks[i]
-                        group_response_masks = response_masks[i]
-
-                        # Get old policy log probs (current policy state)
-                        old_log_probs = self.get_log_probs(
-                            self.policy,
-                            group_input_ids,
-                            group_attention_masks,
-                            group_response_masks
-                        )
-                        old_log_probs_batch.append(old_log_probs.detach())
-
-                        # Get reference model log probs (move to GPU temporarily)
-                        self.ref_policy = self.ref_policy.to(self.device)
-                        ref_log_probs = self.get_log_probs(
-                            self.ref_policy,
-                            group_input_ids,
-                            group_attention_masks,
-                            group_response_masks
-                        )
-                        ref_log_probs_batch.append(ref_log_probs.detach())
-                        # Move reference model back to CPU
-                        self.ref_policy = self.ref_policy.to('cpu')
-                        torch.cuda.empty_cache()
+                    old_log_probs = self.get_log_probs(
+                        self.policy,
+                        input_ids_flat,
+                        attention_masks_flat,
+                        response_masks_flat
+                    ).detach()
 
                 # PPO epochs: multiple passes over the same batch
                 for ppo_epoch in range(self.config.ppo_epochs):
                     # Zero gradients at start of each PPO epoch
                     self.optimizer.zero_grad()
 
-                    # Accumulate gradients over all groups in batch
-                    batch_loss = 0
-                    batch_kl = 0
-                    batch_reward = 0
-                    batch_reward_std = 0
+                    # Compute loss (fully vectorized - single forward pass for entire batch!)
+                    loss, metrics = self.compute_loss(
+                        input_ids=input_ids_flat,
+                        attention_masks=attention_masks_flat,
+                        response_masks=response_masks_flat,
+                        advantages=advantages_flat,
+                        old_log_probs=old_log_probs
+                    )
 
-                    for i in range(input_ids.shape[0]):
-                        print(f"group: {i}")
-                        # Get single group
-                        group_input_ids = input_ids[i]  # [group_size, seq_len]
-                        group_attention_masks = attention_masks[i]
-                        group_response_masks = response_masks[i]
-                        group_rewards = rewards[i]  # [group_size]
+                    # Backward pass
+                    loss.backward()
 
-                        # Compute loss for this group (no optimizer step)
-                        loss, metrics = self.compute_group_loss(
-                            input_ids=group_input_ids,
-                            attention_masks=group_attention_masks,
-                            response_masks=group_response_masks,
-                            rewards=group_rewards,
-                            old_log_probs=old_log_probs_batch[i],
-                            ref_log_probs=ref_log_probs_batch[i]
-                        )
-
-                        # Backward pass - accumulate gradients
-                        loss.backward()
-                        torch.cuda.empty_cache()
-                        # Accumulate metrics
-                        loss = loss.detach()
-
-                        batch_loss += loss.item()
-                        batch_kl += metrics['kl']
-                        batch_reward += metrics['mean_reward']
-                        batch_reward_std += metrics['reward_std']
-
-                    # Gradient clipping after accumulating all groups
+                    # Gradient clipping
                     torch.nn.utils.clip_grad_norm_(
                         self.policy.parameters(),
                         self.config.max_grad_norm
                     )
 
-                    # Single optimizer step for entire batch
+                    # Optimizer step
                     self.optimizer.step()
 
-                # Average metrics over groups in batch
-                num_groups = input_ids.shape[0]
-                epoch_metrics['loss'] += batch_loss / num_groups
-                epoch_metrics['kl'] += batch_kl / num_groups
-                epoch_metrics['mean_reward'] += batch_reward / num_groups
-                epoch_metrics['reward_std'] += batch_reward_std / num_groups
-                print(f"epoch :{epoch}, batch: {batch_idx},  loss: {batch_loss / num_groups}, kl: {batch_kl / num_groups}")
+                # Accumulate metrics
+                epoch_metrics['loss'] += loss.item()
+                epoch_metrics['mean_advantage'] += metrics['mean_advantage']
+                epoch_metrics['advantage_std'] += metrics['advantage_std']
+
+                print(f"epoch: {epoch}, batch: {batch_idx}, loss: {loss.item():.4f}, "
+                      f"mean_adv: {metrics['mean_advantage']:.3f}")
 
                 # Print progress
                 if (batch_idx + 1) % 10 == 0:
                     print(f"  Batch {batch_idx + 1}/{len(self.train_loader)} (step {global_step}): "
-                          f"loss={batch_loss/num_groups:.4f}, "
-                          f"reward={batch_reward/num_groups:.3f}")
+                          f"loss={loss.item():.4f}, "
+                          f"mean_adv={metrics['mean_advantage']:.3f}")
 
                 # Periodic generation logging
                 if self.config.log_generation_steps > 0 and (batch_idx + 1) % self.config.log_generation_steps == 0:
@@ -390,9 +317,8 @@ class GRPOTrainer:
 
             print(f"\nEpoch {epoch + 1}/{num_epochs} Summary:")
             print(f"  Average Loss: {epoch_metrics['loss']:.4f}")
-            print(f"  Average KL: {epoch_metrics['kl']:.4f}")
-            print(f"  Average Reward: {epoch_metrics['mean_reward']:.4f}")
-            print(f"  Average Reward Std: {epoch_metrics['reward_std']:.4f}")
+            print(f"  Average Advantage: {epoch_metrics['mean_advantage']:.4f}")
+            print(f"  Average Advantage Std: {epoch_metrics['advantage_std']:.4f}")
 
 # Example usage with GRPOTextRewardDataset
 def main():
@@ -416,7 +342,7 @@ def main():
 
     train_loader = DataLoader(
         train_dataset,
-        batch_size= 1,#104,  # Number of groups per batch (104 groups × 5 responses = 520 samples total)
+        batch_size= 10,#104,  # Number of groups per batch (104 groups × 5 responses = 520 samples total)
         shuffle=True,
         num_workers=0,
         pin_memory=True
@@ -429,9 +355,9 @@ def main():
     config = GRPOConfig(
         learning_rate=1e-6,  # DeepSeekMath GRPO paper value
         group_size=5,  # Must match dataset group_size
-        ppo_epochs=1,  # Set to 1 for offline GRPO with abundant pre-computed data
+        ppo_epochs=3,  # Set to 1 for offline GRPO with abundant pre-computed data
         clip_ratio=0.2,
-        kl_coef=0.04  # DeepSeekMath GRPO paper value
+        #kl_coef=0.04  # DeepSeekMath GRPO paper value
     )
 
     trainer = GRPOTrainer(
