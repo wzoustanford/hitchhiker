@@ -388,7 +388,7 @@ if __name__ == "__main__":
     # Unit test for GRPOTextRewardDataset __getitem__
     print("\n" + "="*50)
     print("Testing GRPOTextRewardDataset __getitem__ function...")
-
+    
     grpo_item = grpo_dataset[0]
     print(f"\nGRPO item (group) test:")
     print(f"  Keys: {list(grpo_item.keys())}")

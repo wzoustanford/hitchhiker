@@ -44,7 +44,7 @@ if __name__ == '__main__':
     
     batch_size = 5 
     filename = args.filename
-    D = pickle.load(open('/home/ubuntu/iclrresearch/hitchhiker/data/'+filename, 'rb')) 
+    D = pickle.load(open('/home/ubuntu/wzresarchhd/hitchhiker/data/'+filename, 'rb')) 
 
     # Load model and tokenizer
     model_name = "meta-llama/Llama-3.2-3B-Instruct"
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     tokenizer.pad_token = tokenizer.eos_token
     torch.set_grad_enabled(False)
     saveL = []
-
+    
     filter_dict = pickle.load(open('large_cap_filter_dict.pkl', 'rb'))
 
     filtered_count = 0
@@ -80,26 +80,30 @@ if __name__ == '__main__':
         
         stock_info_prompt = f"Ticker is {ticker}."
         
-        #print("Processing: " + stock_info_prompt)
-
+        print("Processing: " + stock_info_prompt)
+        
         stock_prices_prompt = """
         stock prices in the past year, about 248 days: 
         """ + re.sub(r'\n\s+', ' ', str(D['trainFeature'][ticker_idx]))
-
+        
         news_prompt = """
         news about this company at the start of the month: 
         """ + str(D['trainNewsFeatures']['strs'][ticker_idx])
-
+        
+        if(len(news_prompt)) > 8000:
+            print('cutting news prompt to 8000:')
+            news_prompt = news_prompt[-8000:]
+        
         action_request_prompt = """
         From your financial expertise, could you decide on an action to take: 
         How confident are you from 1 to 10, that if we trade this stock, we will make a profit? Please note by 'trade this stock', we mean by buying a unit of this stock tomorrow, holding for 25 days and selling it on the last day. Note for recommendations (R) 1-5, we won't buy the stock, for 6-10, we'll stock proportion to the expression (R-5)/5.0 Please choose a number from 1 to 10 as an ACTION proposal, in the format: [SCORE:R] where R is your ACTION proposal.
         """ 
-
+        
         messages = [
             {"role": "system", "content": "You are a helpful financial assistant and an expert with US equities."},
             {"role": "user", "content": stock_info_prompt+stock_prices_prompt+news_prompt+action_request_prompt}
         ]
-
+        
         # Apply chat template
         prompt = tokenizer.apply_chat_template(
             messages,
@@ -114,7 +118,7 @@ if __name__ == '__main__':
         #for batch_idx in range(batch_size): 
         while batch_idx < batch_size: 
             print('processing batch num: '+str(batch_idx))
-            temp = 0.7 + 0.01 * numpy.random.randn()
+            temp = 0.7 + 0.02 * numpy.random.randn()
             with torch.inference_mode():  # Add this context manager
                 outputs = model.generate(
                     **inputs,
@@ -142,9 +146,9 @@ if __name__ == '__main__':
                 saveL.append(rb_tuple)
                 batch_idx += 1 
                 torch.cuda.empty_cache()
-
+        
         filtered_count += 1
     
     saveD={'saveL':saveL} 
-    save_filename = 'saveL_1kcap_elem_LLEF_alignment_'+filename 
-    pickle.dump(saveD, open('/home/ubuntu/iclrresearch/hitchhiker/llef_alignment_data/' + save_filename, 'wb'))
+    save_filename = 'saveL_it2_1kcap_elem_LLEF_alignment_'+filename 
+    pickle.dump(saveD, open('/home/ubuntu/wzresarchhd/hitchhiker/llef_alignment_data/' + save_filename, 'wb'))
