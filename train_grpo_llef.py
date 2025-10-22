@@ -22,9 +22,9 @@ class GRPOConfig:
     max_prompt_length: int = 8000  # Max prompt length for generation logging
     clamp_log_ratio: bool = False  # Enable log ratio clamping for numerical stability
     log_ratio_range: float = 20.0  # Clamp log ratio to [-range, +range] if enabled
-    save_steps: int = 20  # Save checkpoint every N steps (0 = disable periodic saving)
+    save_steps: int = 500  # Save checkpoint every N steps (0 = disable periodic saving)
     save_dir: str = "./checkpoints"  # Directory to save checkpoints
-    log_generation_steps: int = 5  # Generate and log model outputs every N batches (0 = disable)
+    log_generation_steps: int = 50  # Generate and log model outputs every N batches (0 = disable)
     max_generation_tokens: int = 256  # Max tokens for logging generations
 
 class GRPOTrainer:
@@ -177,7 +177,15 @@ class GRPOTrainer:
 
         # Add generic prompt
         generic_prompt = "Is it wise to invest in tech stocks like Apple, Microsoft around 2020?"
-        prompts.append(("Generic Prompt", generic_prompt))
+        prompts.append(("Generic Prompt 1 ", generic_prompt))
+
+        # Add generic prompt 2 
+        generic_prompt = "Is it wise to invest in banking equity like around early 2022?"
+        prompts.append(("Generic Prompt 2 ", generic_prompt))
+
+        # Add generic prompt 3 
+        generic_prompt = "Is it wise to invest in grocery and supermarket equity like Albertsons, Target, and Walmart around early 2021?"
+        prompts.append(("Generic Prompt 3 ", generic_prompt))
 
         print(f"\n{'='*80}")
         print(f"Generation Log at Step {step}")
@@ -314,7 +322,7 @@ class GRPOTrainer:
             num_batches = len(self.train_loader)
             for key in epoch_metrics:
                 epoch_metrics[key] /= num_batches
-
+            
             print(f"\nEpoch {epoch + 1}/{num_epochs} Summary:")
             print(f"  Average Loss: {epoch_metrics['loss']:.4f}")
             print(f"  Average Advantage: {epoch_metrics['mean_advantage']:.4f}")
@@ -333,16 +341,16 @@ def main():
 
     # Create dataset and dataloader
     train_dataset = GRPOTextRewardDataset(
-        data_path="llef_first_test_data_list.txt",
+        data_path="llef_2020_2022_test_data_list.txt",
         tokenizer=tokenizer,
         max_length=512,
-        max_prompt_length=1000,
+        max_prompt_length=1500,
         group_size=5
     )
 
     train_loader = DataLoader(
         train_dataset,
-        batch_size= 10,#104,  # Number of groups per batch (104 groups × 5 responses = 520 samples total)
+        batch_size= 1,#104,  # Number of groups per batch (104 groups × 5 responses = 520 samples total)
         shuffle=True,
         num_workers=0,
         pin_memory=True
