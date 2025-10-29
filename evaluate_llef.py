@@ -5,7 +5,8 @@ from transformers import (
     AutoTokenizer,
 )
 
-filename = 'data/model_data_single_step_trainingtimelength360d_buyselltimelength25d_training_data_start_date_2022_10_09_test_data_start_date_2022_11_10_newsFeaturesTrue_alpacafracfiltered.pkl'
+#filename = 'data/model_data_single_step_trainingtimelength360d_buyselltimelength25d_training_data_start_date_2022_10_09_test_data_start_date_2022_11_10_newsFeaturesTrue_alpacafracfiltered.pkl'
+filename = 'data/model_data_single_step_trainingtimelength360d_buyselltimelength25d_training_data_start_date_2022_11_10_test_data_start_date_2022_12_12_newsFeaturesTrue_alpacafracfiltered.pkl'
 D = pickle.load(open(filename, 'rb')) 
 
 # Load model and tokenizer
@@ -32,8 +33,9 @@ torch.set_grad_enabled(False)
 large_cap_dict = pickle.load(open('large_cap_filter_dict.pkl', 'rb'))
 
 results = []
-MAXCNT = 100
+MAXCNT = 3000
 cnt = 0
+print(f'Processing for MAXCNT {MAXCNT} items.... ')
 for ticker_idx in range(len(D['trainFeature'])):
     if D['all_train_tickers'][ticker_idx] not in large_cap_dict:
         print(f"--->skiping {D['all_train_tickers'][ticker_idx]}")
@@ -44,9 +46,9 @@ for ticker_idx in range(len(D['trainFeature'])):
     prices = D['trainFeature'][ticker_idx]
     monthly_prices = [prices[i].item() for i in range(len(prices)-1, -1, -30)][::-1]
     
+    monthly_returns = []
     for i in range(1, len(monthly_prices)):
-        monthly_prices[i] = monthly_prices[i] / monthly_prices[i - 1]
-    monthly_returns = monthly_prices[1:]
+        monthly_returns.append(monthly_prices[i] / monthly_prices[i - 1])
     
     stock_prices_prompt = """
     Below are the monthly returns for a financial asset over the past 12 months: 
@@ -105,8 +107,16 @@ for ticker_idx in range(len(D['trainFeature'])):
     m = torch.mean(torch.tensor(monthly_returns))
     s = torch.std(torch.tensor(monthly_returns))
 
-    results.append((untrained_assistant_response, trained_assistant_response, m, s))
+    test_last_price = D['train_in_portfolio_series'][ticker_idx][-1]
+    test_first_price = D['train_in_portfolio_series'][ticker_idx][0]
+    test_approx_return = test_last_price / test_first_price 
+
+    results.append((untrained_assistant_response, trained_assistant_response, m.item(), s.item(), D['all_train_tickers'][ticker_idx], ticker_idx, test_approx_return))
+    print(monthly_returns)
+    print(stock_prices_prompt)
+    print(m)
+
     cnt += 1
 
 saveD = {'results':results} 
-pickle.dump(saveD, open(f"evaluate_llef_first_result_large_cap_cnt{cnt}.pkl", 'wb'))
+pickle.dump(saveD, open(f"evaluate_llef_with_test_return_cnt{cnt}_start_date_2022_11_10_test_data_start_date_2022_12_12.pkl", 'wb'))
