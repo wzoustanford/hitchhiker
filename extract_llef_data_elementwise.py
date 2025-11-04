@@ -45,7 +45,7 @@ if __name__ == '__main__':
     batch_size = 5 
     filename = args.filename
     D = pickle.load(open('/home/ubuntu/wzresarchhd/hitchhiker/data/'+filename, 'rb')) 
-
+    
     # Load model and tokenizer
     model_name = "meta-llama/Llama-3.2-3B-Instruct"
     model = AutoModelForCausalLM.from_pretrained(

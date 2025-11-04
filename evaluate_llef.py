@@ -6,7 +6,10 @@ from transformers import (
 )
 
 #filename = 'data/model_data_single_step_trainingtimelength360d_buyselltimelength25d_training_data_start_date_2022_10_09_test_data_start_date_2022_11_10_newsFeaturesTrue_alpacafracfiltered.pkl'
-filename = 'data/model_data_single_step_trainingtimelength360d_buyselltimelength25d_training_data_start_date_2022_11_10_test_data_start_date_2022_12_12_newsFeaturesTrue_alpacafracfiltered.pkl'
+#filename = 'data/model_data_single_step_trainingtimelength360d_buyselltimelength25d_training_data_start_date_2022_11_10_test_data_start_date_2022_12_12_newsFeaturesTrue_alpacafracfiltered.pkl'
+filename = 'data/model_data_single_step_trainingtimelength360d_buyselltimelength25d_training_data_start_date_2023_01_13_test_data_start_date_2023_02_14_newsFeaturesTrue_alpacafracfiltered.pkl'
+#filename = 'data/model_data_single_step_trainingtimelength360d_buyselltimelength25d_training_data_start_date_2023_02_14_test_data_start_date_2023_03_18_newsFeaturesTrue_alpacafracfiltered.pkl'
+
 D = pickle.load(open(filename, 'rb')) 
 
 # Load model and tokenizer
@@ -20,7 +23,7 @@ untrained_model = AutoModelForCausalLM.from_pretrained(
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 trained_model = AutoModelForCausalLM.from_pretrained(
-    './checkpoints/step_15500_epoch_1',
+    './checkpoints/step_74500_epoch_5',
     torch_dtype=torch.bfloat16,
     device_map="auto",
     token="", 
@@ -119,4 +122,7 @@ for ticker_idx in range(len(D['trainFeature'])):
     cnt += 1
 
 saveD = {'results':results} 
-pickle.dump(saveD, open(f"evaluate_llef_with_test_return_cnt{cnt}_start_date_2022_11_10_test_data_start_date_2022_12_12.pkl", 'wb'))
+
+datestr = filename.split('25d_training_data_')[1].split('_newsFeatures')[0]
+
+pickle.dump(saveD, open(f"evaluate_llef_with_test_return_cnt{cnt}_{datestr}.pkl", 'wb'))
