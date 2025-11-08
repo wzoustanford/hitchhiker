@@ -1,5 +1,14 @@
 # hitchhiker 
 
+Web server:
+cd ~/www/
+python3  -m http.server 8080
+
+
+source venv/bin/activate
+python3 -m web.main
+
+
 Working repository - RL with enrivonment feedback alignment 
 
 - replay buffer is constructed as the training goes on, limited to seen data 
