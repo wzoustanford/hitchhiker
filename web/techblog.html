@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Blog - AngleNexus</title>
+    <style>
+      * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+      }
+
+      :root {
+          --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+          --dark-bg: #0a0a0a;
+          --glass-bg: rgba(255, 255, 255, 0.05);
+          --glass-border: rgba(255, 255, 255, 0.1);
+          --text-primary: #ffffff;
+          --text-secondary: #b8b8b8;
+          --accent-purple: #764ba2;
+          --accent-pink: #f5576c;
+      }
+
+      body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          background: var(--dark-bg);
+          color: var(--text-primary);
+          overflow-x: hidden;
+          line-height: 1.6;
+      }
+
+      /* Animated background */
+      .bg-animation {
+          position: fixed;
+          width: 100%;
+          height: 100%;
+          top: 0;
+          left: 0;
+          z-index: -1;
+          background: var(--dark-bg);
+          overflow: hidden;
+      }
+
+      .bg-animation::before {
+          content: '';
+          position: absolute;
+          width: 150%;
+          height: 150%;
+          background: radial-gradient(circle at 20% 50%, rgba(118, 75, 162, 0.3) 0%, transparent 50%),
+                      radial-gradient(circle at 80% 80%, rgba(245, 87, 108, 0.2) 0%, transparent 50%),
+                      radial-gradient(circle at 40% 20%, rgba(102, 126, 234, 0.2) 0%, transparent 50%);
+          animation: bgMove 20s ease-in-out infinite;
+      }
+
+      @keyframes bgMove {
+          0%, 100% { transform: translate(-5%, -5%) rotate(0deg); }
+          50% { transform: translate(5%, 5%) rotate(180deg); }
+      }
+
+      /* Floating particles */
+      .particle {
+          position: fixed;
+          pointer-events: none;
+          opacity: 0.5;
+          background: rgba(255, 255, 255, 0.5);
+          border-radius: 50%;
+          animation: float 20s infinite;
+      }
+
+      @keyframes float {
+          0%, 100% { transform: translateY(100vh) translateX(0) scale(0); }
+          10% { transform: translateY(90vh) translateX(10px) scale(1); }
+          90% { transform: translateY(-10vh) translateX(-10px) scale(1); }
+          100% { transform: translateY(-20vh) translateX(0) scale(0); }
+      }
+
+      /* Navigation */
+      nav {
+          position: fixed;
+          top: 0;
+          width: 100%;
+          padding: 20px 50px;
+          background: rgba(10, 10, 10, 0.8);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-bottom: 1px solid var(--glass-border);
+          z-index: 1000;
+          transition: all 0.3s ease;
+      }
+
+      nav.scrolled {
+          padding: 15px 50px;
+          background: rgba(10, 10, 10, 0.95);
+      }
+
+      .nav-container {
+          max-width: 1400px;
+          margin: 0 auto;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+      }
+
+      .logo {
+          font-size: 28px;
+          font-weight: 800;
+          background: var(--primary-gradient);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          letter-spacing: -1px;
+          text-decoration: none;
+          display: inline-block;
+      }
+
+      .nav-links {
+          display: flex;
+          gap: 40px;
+          list-style: none;
+      }
+
+      .nav-links a {
+          color: var(--text-secondary);
+          text-decoration: none;
+          font-weight: 500;
+          transition: all 0.3s ease;
+          position: relative;
+      }
+
+      .nav-links a::after {
+          content: '';
+          position: absolute;
+          bottom: -5px;
+          left: 0;
+          width: 0;
+          height: 2px;
+          background: var(--primary-gradient);
+          transition: width 0.3s ease;
+      }
+
+      .nav-links a:hover {
+          color: var(--text-primary);
+      }
+
+      .nav-links a:hover::after {
+          width: 100%;
+      }
+
+      .nav-links a.active {
+          color: var(--text-primary);
+      }
+
+      .nav-links a.active::after {
+          width: 100%;
+      }
+
+      /* Hero Section */
+      .hero {
+          min-height: 50vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 150px 50px 80px;
+          position: relative;
+      }
+
+      .hero-content {
+          max-width: 1000px;
+          text-align: center;
+      }
+
+      .hero-text h1 {
+          font-size: clamp(48px, 6vw, 64px);
+          font-weight: 900;
+          line-height: 1.1;
+          margin-bottom: 30px;
+          background: linear-gradient(135deg, #ffffff 0%, #b8b8b8 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: fadeInUp 1s ease-out;
+      }
+
+      .gradient-text {
+          background: var(--primary-gradient);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+      }
+
+      .hero-text p {
+          font-size: 20px;
+          color: var(--text-secondary);
+          max-width: 700px;
+          margin: 0 auto 40px;
+          animation: fadeInUp 1s ease-out 0.2s both;
+      }
+
+      @keyframes fadeInUp {
+          from {
+              opacity: 0;
+              transform: translateY(30px);
+          }
+          to {
+              opacity: 1;
+              transform: translateY(0);
+          }
+      }
+
+      /* Blog Section */
+      .blog-section {
+          padding: 0px 50px 100px;
+          max-width: 1000px;
+          margin: 0 auto;
+      }
+
+      .glass-card {
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
+          border-radius: 20px;
+          padding: 40px;
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+      }
+
+      /* Blog Post Card */
+      .blog-post {
+          margin-bottom: 35px;
+          padding: 25px;
+          background: rgba(118, 75, 162, 0.05);
+          border-radius: 15px;
+          border-left: 4px solid var(--accent-purple);
+          transition: all 0.3s ease;
+          position: relative;
+          overflow: hidden;
+      }
+
+      .blog-post::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: radial-gradient(circle, rgba(118, 75, 162, 0.1) 0%, transparent 70%);
+          transition: all 0.5s ease;
+          opacity: 0;
+      }
+
+      .blog-post:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 10px 30px rgba(118, 75, 162, 0.2);
+      }
+
+      .blog-post:hover::before {
+          opacity: 1;
+      }
+
+      .blog-post h3 {
+          font-size: 20px;
+          margin-bottom: 15px;
+          color: var(--text-primary);
+          position: relative;
+          z-index: 1;
+      }
+
+      .blog-series {
+          display: inline-block;
+          background: var(--primary-gradient);
+          color: white;
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 600;
+          margin-bottom: 15px;
+          position: relative;
+          z-index: 1;
+      }
+
+      .blog-post p {
+          color: var(--text-secondary);
+          font-size: 15px;
+          line-height: 1.6;
+          margin-bottom: 15px;
+          position: relative;
+          z-index: 1;
+      }
+
+      .btn {
+          padding: 12px 24px;
+          font-size: 14px;
+          font-weight: 600;
+          border: none;
+          border-radius: 50px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          text-decoration: none;
+          display: inline-block;
+          position: relative;
+          z-index: 1;
+      }
+
+      .btn-primary {
+          background: var(--primary-gradient);
+          color: white;
+          box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
+      }
+
+      .btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 15px 40px rgba(118, 75, 162, 0.4);
+      }
+
+      .btn-secondary {
+          background: var(--glass-bg);
+          color: var(--text-primary);
+          border: 1px solid var(--glass-border);
+          backdrop-filter: blur(10px);
+      }
+
+      .btn-secondary:hover {
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      /* Back Button */
+      .back-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 30px;
+          padding: 10px 20px;
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
+          border-radius: 50px;
+          color: var(--text-secondary);
+          text-decoration: none;
+          transition: all 0.3s ease;
+          font-weight: 500;
+      }
+
+      .back-btn:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: var(--text-primary);
+          transform: translateX(-5px);
+      }
+
+      /* Footer */
+      footer {
+          padding: 50px;
+          text-align: center;
+          border-top: 1px solid var(--glass-border);
+          background: rgba(10, 10, 10, 0.8);
+          backdrop-filter: blur(20px);
+      }
+
+      .footer-content {
+          max-width: 1400px;
+          margin: 0 auto;
+      }
+
+      /* Responsive */
+      @media (max-width: 968px) {
+          .nav-links {
+              display: none;
+          }
+
+          nav {
+              padding: 20px 30px;
+          }
+
+          .hero {
+              padding: 120px 30px 60px;
+          }
+
+          .blog-section {
+              padding: 0px 30px 80px;
+          }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Animated Background -->
+    <div class="bg-animation"></div>
+
+    <!-- Simple particles -->
+    <div class="particle" style="width: 3px; height: 3px; left: 10%; animation-delay: 0s;"></div>
+    <div class="particle" style="width: 2px; height: 2px; left: 20%; animation-delay: 2s;"></div>
+    <div class="particle" style="width: 4px; height: 4px; left: 30%; animation-delay: 4s;"></div>
+    <div class="particle" style="width: 3px; height: 3px; left: 40%; animation-delay: 6s;"></div>
+    <div class="particle" style="width: 2px; height: 2px; left: 50%; animation-delay: 8s;"></div>
+
+    <!-- Navigation -->
+    <nav id="navbar">
+      <div class="nav-container">
+        <a href="anglenexus.html" class="logo">AngleNexus</a>
+        <ul class="nav-links">
+          <li><a href="anglenexus.html">Home</a></li>
+          <li><a href="anglenexus.html#agents">Agents</a></li>
+          <li><a href="anglenexus.html#about">About</a></li>
+          <li><a href="anglenexus.html#research">Research</a></li>
+          <li><a href="anglenexus.html#contact">Contact</a></li>
+          <li><a href="techblog.html" class="active">Technical Blog</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-content">
+        <div class="hero-text">
+          <h1>Technical <span class="gradient-text">Blog</span></h1>
+          <p>Deep dives into Reinforcement Learning, from theory to implementation</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Blog Posts Section -->
+    <section class="blog-section">
+      <a href="anglenexus.html" class="back-btn">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="12 5 5 12 12 19"></polyline>
+        </svg>
+        Back to Home
+      </a>
+
+      <div class="glass-card">
+        <!-- Blog Post 1 -->
+        <div class="blog-post">
+          <h3>Multi-Task Reinforcement Learning: Addressing the Generalization Challenge in RL</h3>
+          <p>Exploring how multi-task learning approaches can help reinforcement learning agents generalize across different environments and tasks, addressing one of the fundamental challenges in modern RL systems.</p>
+          <a href="https://medium.com/@willzou/multi-task-reinforcement-learning-addressing-the-generalization-challenge-in-rl-882479163823" 
+             target="_blank" 
+             class="btn btn-primary">
+            Read on Medium
+          </a>
+        </div>
+
+        <!-- Blog Post 2 -->
+        <div class="blog-post">
+          <span class="blog-series">Deep RL from Scratch Series - Part 5</span>
+          <h3>MCTS (ML): Monte Carlo Tree Search Implementation</h3>
+          <p>Diving deep into Monte Carlo Tree Search (MCTS), a powerful algorithm for decision-making in complex environments. Learn how to implement MCTS from scratch with practical ML considerations.</p>
+          <a href="https://medium.com/@willzou/deep-reinforcement-learning-from-scratch-ml-infra-5-mcts-ml-7038ff394b02" 
+             target="_blank" 
+             class="btn btn-primary">
+            Read on Medium
+          </a>
+        </div>
+
+        <!-- Blog Post 3 -->
+        <div class="blog-post">
+          <span class="blog-series">Deep RL from Scratch Series - Part 4</span>
+          <h3>It's On!: Off-Policy-Evaluation for Offline-RL</h3>
+          <p>Understanding off-policy evaluation methods that enable learning from logged data without direct environment interaction. Essential techniques for real-world RL applications where online learning isn't feasible.</p>
+          <a href="https://medium.com/@willzou/deep-reinforcement-learning-from-scratch-4-its-on-off-policy-evaluation-for-offline-rl-983ab85a9606" 
+             target="_blank" 
+             class="btn btn-primary">
+            Read on Medium
+          </a>
+        </div>
+
+        <!-- Blog Post 4 -->
+        <div class="blog-post">
+          <span class="blog-series">Deep RL from Scratch Series - Part 3</span>
+          <h3>R2D2: Recurrent Experience Replay in Distributed Reinforcement Learning</h3>
+          <p>Implementing R2D2 (Recurrent Replay Distributed DQN), which combines recurrent neural networks with distributed training for handling partial observability in RL environments.</p>
+          <a href="https://medium.com/@willzou/deep-reinforcement-learning-from-scratch-ml-infra-3-r2d2-40334589f255" 
+             target="_blank" 
+             class="btn btn-primary">
+            Read on Medium
+          </a>
+        </div>
+
+        <!-- Blog Post 5 -->
+        <div class="blog-post">
+          <span class="blog-series">Deep RL from Scratch Series - Part 2</span>
+          <h3>Replay Buffer and Prioritized Experience Replay</h3>
+          <p>Building efficient replay buffers and implementing prioritized experience replay to improve sample efficiency in deep reinforcement learning. Key infrastructure components for modern RL systems.</p>
+          <a href="https://medium.com/@willzou/deep-reinforcement-learning-from-scratch-ml-infra-2-replay-buffer-and-prioritized-rb-45986c8e6676" 
+             target="_blank" 
+             class="btn btn-primary">
+            Read on Medium
+          </a>
+        </div>
+
+        <!-- Blog Post 6 -->
+        <div class="blog-post">
+          <span class="blog-series">Deep RL from Scratch Series - Part 1</span>
+          <h3>Deep Reinforcement Learning from Scratch: Foundation & Infrastructure</h3>
+          <p>Starting the journey of building deep reinforcement learning systems from the ground up. Learn the fundamental concepts and infrastructure needed to implement production-ready RL algorithms.</p>
+          <a href="https://medium.com/@willzou/deep-reinforcement-learning-from-scratch-ml-infra-1-5cc8e63adca6" 
+             target="_blank" 
+             class="btn btn-primary">
+            Read on Medium
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-content">
+        <div class="logo" style="margin-bottom: 20px;">AngleNexus</div>
+        <p style="color: var(--text-secondary);">Building the next generation of intelligent systems</p>
+        <p style="color: var(--text-secondary); margin-top: 30px;">© 2024 AngleNexus. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script>
+      // Simple navbar scroll effect
+      window.addEventListener('scroll', function() {
+        const navbar = document.getElementById('navbar');
+        if (window.scrollY > 50) {
+          navbar.classList.add('scrolled');
+        } else {
+          navbar.classList.remove('scrolled');
+        }
+      });
+
+      // Add subtle hover effect to blog posts
+      document.querySelectorAll('.blog-post').forEach(post => {
+        post.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-3px)';
+        });
+        post.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateY(0)';
+        });
+      });
+    </script>
+  </body>
+</html>
