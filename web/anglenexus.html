@@ -1,1552 +1,2375 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AngleNexus - Foundational RL on Scalable AI Infrastructure</title>
-    <style>
-      * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AngleNexus - Foundational RL on Scalable AI Infrastructure</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --dark-bg: #0a0a0a;
+      --glass-bg: rgba(255, 255, 255, 0.05);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --text-primary: #ffffff;
+      --text-secondary: #b8b8b8;
+      --accent-purple: #764ba2;
+      --accent-pink: #f5576c;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--dark-bg);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* Animated background */
+    .bg-animation {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      z-index: -1;
+      background: var(--dark-bg);
+      overflow: hidden;
+    }
+
+    .bg-animation::before {
+      content: '';
+      position: absolute;
+      width: 150%;
+      height: 150%;
+      background: radial-gradient(circle at 20% 50%, rgba(118, 75, 162, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(245, 87, 108, 0.2) 0%, transparent 50%),
+        radial-gradient(circle at 40% 20%, rgba(102, 126, 234, 0.2) 0%, transparent 50%);
+      animation: bgMove 20s ease-in-out infinite;
+    }
+
+    @keyframes bgMove {
+
+      0%,
+      100% {
+        transform: translate(-5%, -5%) rotate(0deg);
       }
 
-      :root {
-          --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-          --dark-bg: #0a0a0a;
-          --glass-bg: rgba(255, 255, 255, 0.05);
-          --glass-border: rgba(255, 255, 255, 0.1);
-          --text-primary: #ffffff;
-          --text-secondary: #b8b8b8;
-          --accent-purple: #764ba2;
-          --accent-pink: #f5576c;
+      50% {
+        transform: translate(5%, 5%) rotate(180deg);
+      }
+    }
+
+    /* Floating particles */
+    .particle {
+      position: fixed;
+      pointer-events: none;
+      opacity: 0.5;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 50%;
+      animation: float 20s infinite;
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(100vh) translateX(0) scale(0);
       }
 
-      body {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          background: var(--dark-bg);
-          color: var(--text-primary);
-          overflow-x: hidden;
-          line-height: 1.6;
+      10% {
+        transform: translateY(90vh) translateX(10px) scale(1);
       }
 
-      /* Animated background */
-      .bg-animation {
-          position: fixed;
-          width: 100%;
-          height: 100%;
-          top: 0;
-          left: 0;
-          z-index: -1;
-          background: var(--dark-bg);
-          overflow: hidden;
+      90% {
+        transform: translateY(-10vh) translateX(-10px) scale(1);
       }
 
-      .bg-animation::before {
-          content: '';
-          position: absolute;
-          width: 150%;
-          height: 150%;
-          background: radial-gradient(circle at 20% 50%, rgba(118, 75, 162, 0.3) 0%, transparent 50%),
-                      radial-gradient(circle at 80% 80%, rgba(245, 87, 108, 0.2) 0%, transparent 50%),
-                      radial-gradient(circle at 40% 20%, rgba(102, 126, 234, 0.2) 0%, transparent 50%);
-          animation: bgMove 20s ease-in-out infinite;
+      100% {
+        transform: translateY(-20vh) translateX(0) scale(0);
+      }
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      padding: 20px 50px;
+      background: rgba(10, 10, 10, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--glass-border);
+      z-index: 1000;
+      transition: all 0.3s ease;
+    }
+
+    nav.scrolled {
+      padding: 15px 50px;
+      background: rgba(10, 10, 10, 0.95);
+    }
+
+    .nav-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -1px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--primary-gradient);
+      transition: width 0.3s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-primary);
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 120px 50px 80px;
+      position: relative;
+    }
+
+    .hero-content {
+      max-width: 1400px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .hero-text h1 {
+      font-size: clamp(48px, 6vw, 72px);
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 30px;
+      background: linear-gradient(135deg, #ffffff 0%, #b8b8b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: fadeInUp 1s ease-out;
+    }
+
+    .gradient-text {
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-text p {
+      font-size: 20px;
+      color: var(--text-secondary);
+      margin-bottom: 40px;
+      animation: fadeInUp 1s ease-out 0.2s both;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
       }
 
-      @keyframes bgMove {
-          0%, 100% { transform: translate(-5%, -5%) rotate(0deg); }
-          50% { transform: translate(5%, 5%) rotate(180deg); }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 20px;
+      animation: fadeInUp 1s ease-out 0.4s both;
+    }
+
+    .btn {
+      padding: 15px 35px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary {
+      background: var(--primary-gradient);
+      color: white;
+      box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 40px rgba(118, 75, 162, 0.4);
+    }
+
+    .btn-secondary {
+      background: var(--glass-bg);
+      color: var(--text-primary);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(10px);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* 3D Card */
+    .hero-visual {
+      perspective: 1000px;
+      animation: fadeIn 1s ease-out 0.6s both;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
       }
 
-      /* Floating particles */
-      .particle {
-          position: fixed;
-          pointer-events: none;
-          opacity: 0.5;
-          background: rgba(255, 255, 255, 0.5);
-          border-radius: 50%;
-          animation: float 20s infinite;
+      to {
+        opacity: 1;
+      }
+    }
+
+    .glass-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 40px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+      transform-style: preserve-3d;
+      transition: transform 0.3s ease;
+    }
+
+    .glass-card:hover {
+      transform: rotateY(5deg) rotateX(-5deg);
+    }
+
+    .card-icon {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 20px;
+      background: var(--primary-gradient);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
+    }
+
+    /* Sections */
+    section {
+      padding: 100px 50px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 80px;
+    }
+
+    .section-header h2 {
+      font-size: clamp(36px, 4vw, 48px);
+      font-weight: 800;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #ffffff 0%, #b8b8b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .section-header p {
+      font-size: 20px;
+      color: var(--text-secondary);
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    /* Features Grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 30px;
+    }
+
+    .feature-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 40px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(118, 75, 162, 0.1) 0%, transparent 70%);
+      transition: all 0.5s ease;
+      opacity: 0;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(118, 75, 162, 0.3);
+    }
+
+    .feature-card:hover::before {
+      opacity: 1;
+    }
+
+    .feature-icon {
+      width: 60px;
+      height: 60px;
+      background: var(--primary-gradient);
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+
+    .feature-card h3 {
+      font-size: 24px;
+      margin-bottom: 15px;
+    }
+
+    .feature-card p {
+      color: var(--text-secondary);
+      line-height: 1.8;
+    }
+
+    /* Agent Cards - Changed to stacked layout */
+    .agents-container {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .agent-card {
+      background: linear-gradient(135deg, rgba(118, 75, 162, 0.1) 0%, rgba(245, 87, 108, 0.1) 100%);
+      border: 1px solid var(--glass-border);
+      border-radius: 25px;
+      padding: 40px;
+      position: relative;
+      /* CRITICAL: Changed from 'overflow: hidden' to 'visible' to allow chat to expand */
+      overflow: visible;
+      transition: all 0.4s ease;
+      width: 100%;
+    }
+
+    /* Removed the ::after animation that might interfere */
+
+    .agent-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(118, 75, 162, 0.5);
+      box-shadow: 0 15px 40px rgba(118, 75, 162, 0.2);
+    }
+
+    .agent-name {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 20px;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* DAIMON SPECIFIC STYLES - ISOLATED NAMESPACE */
+    .daimon-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .daimon-title-section {
+      flex: 1;
+    }
+
+    .greek-subtitle {
+      color: var(--text-secondary);
+      font-style: italic;
+      font-size: 16px;
+      margin-top: -15px;
+      margin-bottom: 20px;
+    }
+
+    #daimonBtn {
+      background: var(--primary-gradient);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
+      position: relative;
+      z-index: 10;
+      animation: subtleGlow 3s ease-in-out infinite;
+    }
+
+    @keyframes subtleGlow {
+
+      0%,
+      100% {
+        box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
       }
 
-      @keyframes float {
-          0%, 100% { transform: translateY(100vh) translateX(0) scale(0); }
-          10% { transform: translateY(90vh) translateX(10px) scale(1); }
-          90% { transform: translateY(-10vh) translateX(-10px) scale(1); }
-          100% { transform: translateY(-20vh) translateX(0) scale(0); }
+      50% {
+        box-shadow: 0 15px 40px rgba(118, 75, 162, 0.5);
+      }
+    }
+
+    #daimonBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 50px rgba(118, 75, 162, 0.6);
+      animation: none;
+    }
+
+    #daimonArr {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.3s ease;
+    }
+
+    #daimonArr.rot {
+      transform: rotate(180deg);
+    }
+
+    /* Daimon Chat Box - Improved for stacked layout */
+    #daimonBox {
+      height: 0;
+      overflow: hidden;
+      transition: height 0.5s ease;
+      margin-top: 30px;
+    }
+
+    #daimonBox.show {
+      height: 500px;
+    }
+
+    .d-chat-inner {
+      background: linear-gradient(135deg, rgba(10, 10, 10, 0.95) 0%, rgba(20, 20, 20, 0.95) 100%);
+      border: 1px solid rgba(118, 75, 162, 0.3);
+      border-radius: 20px;
+      padding: 25px;
+      height: 470px;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(15px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .d-chat-header {
+      background: var(--primary-gradient);
+      margin: -25px -25px 25px -25px;
+      padding: 18px 25px;
+      border-radius: 20px 20px 0 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 5px 20px rgba(118, 75, 162, 0.3);
+    }
+
+    .d-status {
+      width: 12px;
+      height: 12px;
+      background: #4ade80;
+      border-radius: 50%;
+      box-shadow: 0 0 15px rgba(74, 222, 128, 0.6);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
       }
 
-      /* Navigation */
-      nav {
-          position: fixed;
-          top: 0;
-          width: 100%;
-          padding: 20px 50px;
-          background: rgba(10, 10, 10, 0.8);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border-bottom: 1px solid var(--glass-border);
-          z-index: 1000;
-          transition: all 0.3s ease;
+      50% {
+        opacity: 0.7;
+        transform: scale(1.1);
       }
+    }
 
-      nav.scrolled {
-          padding: 15px 50px;
-          background: rgba(10, 10, 10, 0.95);
-      }
+    #daimonMsgs {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 15px;
+      margin-bottom: 20px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(118, 75, 162, 0.3) transparent;
+    }
 
-      .nav-container {
-          max-width: 1400px;
-          margin: 0 auto;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-      }
+    #daimonMsgs::-webkit-scrollbar {
+      width: 8px;
+    }
 
-      .logo {
-          font-size: 28px;
-          font-weight: 800;
-          background: var(--primary-gradient);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          letter-spacing: -1px;
+    #daimonMsgs::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+    }
+
+    #daimonMsgs::-webkit-scrollbar-thumb {
+      background: rgba(118, 75, 162, 0.5);
+      border-radius: 4px;
+    }
+
+    #daimonMsgs::-webkit-scrollbar-thumb:hover {
+      background: rgba(118, 75, 162, 0.7);
+    }
+
+    .d-welcome {
+      text-align: center;
+      color: var(--text-secondary);
+      padding: 60px 40px;
+      background: linear-gradient(135deg, rgba(118, 75, 162, 0.05) 0%, rgba(245, 87, 108, 0.05) 100%);
+      border-radius: 12px;
+      margin: 20px;
+    }
+
+    .d-welcome h4 {
+      color: var(--text-primary);
+      font-size: 1.3em;
+      margin-bottom: 12px;
+    }
+
+    .d-welcome p {
+      color: #999;
+      font-size: 0.95em;
+    }
+
+    .d-msg {
+      margin-bottom: 15px;
+      display: flex;
+      animation: fadeInUp 0.3s ease;
+    }
+
+    .d-msg.user {
+      justify-content: flex-end;
+    }
+
+    .d-msg-content {
+      max-width: 70%;
+      padding: 12px 18px;
+      border-radius: 20px;
+      font-size: 15px;
+    }
+
+    .d-msg.user .d-msg-content {
+      background: var(--primary-gradient);
+      color: white;
+      border-bottom-right-radius: 5px;
+    }
+
+    .d-msg.assistant .d-msg-content {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--glass-border);
+      border-bottom-left-radius: 5px;
+    }
+
+    .d-input-wrap {
+      display: flex;
+      gap: 10px;
+    }
+
+    #daimonIn {
+      flex: 1;
+      padding: 12px 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      border-radius: 50px;
+      color: white;
+      font-size: 15px;
+      outline: none;
+    }
+
+    #daimonIn::placeholder {
+      color: var(--text-secondary);
+    }
+
+    #daimonIn:focus {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(118, 75, 162, 0.5);
+    }
+
+    #daimonSnd {
+      background: var(--primary-gradient);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    #daimonSnd:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
+    }
+
+    #daimonSnd:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* AVVOCATO SPECIFIC STYLES - ISOLATED NAMESPACE */
+    .avvocato-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .avvocato-title-section {
+      flex: 1;
+    }
+
+    .legal-subtitle {
+      color: var(--text-secondary);
+      font-style: italic;
+      font-size: 16px;
+      margin-top: -15px;
+      margin-bottom: 20px;
+    }
+
+    #avvocatoBtn {
+      background: var(--primary-gradient);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
+      position: relative;
+      z-index: 10;
+      animation: subtleGlow 3s ease-in-out infinite;
+    }
+
+    #avvocatoBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 50px rgba(118, 75, 162, 0.6);
+      animation: none;
+    }
+
+    #avvocatoArr {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.3s ease;
+    }
+
+    #avvocatoArr.rot {
+      transform: rotate(180deg);
+    }
+
+    /* Avvocato Chat Box */
+    #avvocatoBox {
+      height: 0;
+      overflow: hidden;
+      transition: height 0.5s ease;
+      margin-top: 30px;
+    }
+
+    #avvocatoBox.show {
+      height: 500px;
+    }
+
+    .a-chat-inner {
+      background: linear-gradient(135deg, rgba(10, 10, 10, 0.95) 0%, rgba(20, 20, 20, 0.95) 100%);
+      border: 1px solid rgba(118, 75, 162, 0.3);
+      border-radius: 20px;
+      padding: 25px;
+      height: 470px;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(15px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .a-chat-header {
+      background: var(--primary-gradient);
+      margin: -25px -25px 25px -25px;
+      padding: 18px 25px;
+      border-radius: 20px 20px 0 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 5px 20px rgba(118, 75, 162, 0.3);
+    }
+
+    .a-status {
+      width: 12px;
+      height: 12px;
+      background: #4ade80;
+      border-radius: 50%;
+      box-shadow: 0 0 15px rgba(74, 222, 128, 0.6);
+      animation: pulse 2s infinite;
+    }
+
+    #avvocatoMsgs {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 15px;
+      margin-bottom: 20px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(118, 75, 162, 0.3) transparent;
+    }
+
+    #avvocatoMsgs::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #avvocatoMsgs::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+    }
+
+    #avvocatoMsgs::-webkit-scrollbar-thumb {
+      background: rgba(118, 75, 162, 0.5);
+      border-radius: 4px;
+    }
+
+    #avvocatoMsgs::-webkit-scrollbar-thumb:hover {
+      background: rgba(118, 75, 162, 0.7);
+    }
+
+    .a-welcome {
+      text-align: center;
+      color: var(--text-secondary);
+      padding: 60px 40px;
+      background: linear-gradient(135deg, rgba(118, 75, 162, 0.05) 0%, rgba(245, 87, 108, 0.05) 100%);
+      border-radius: 12px;
+      margin: 20px;
+    }
+
+    .a-welcome h4 {
+      color: var(--text-primary);
+      font-size: 1.3em;
+      margin-bottom: 12px;
+    }
+
+    .a-welcome p {
+      color: #999;
+      font-size: 0.95em;
+      line-height: 1.6;
+    }
+
+    .a-msg {
+      margin-bottom: 15px;
+      display: flex;
+      animation: fadeInUp 0.3s ease;
+    }
+
+    .a-msg.user {
+      justify-content: flex-end;
+    }
+
+    .a-msg-content {
+      max-width: 70%;
+      padding: 12px 18px;
+      border-radius: 20px;
+      font-size: 15px;
+    }
+
+    .a-msg.user .a-msg-content {
+      background: var(--primary-gradient);
+      color: white;
+      border-bottom-right-radius: 5px;
+    }
+
+    .a-msg.assistant .a-msg-content {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--glass-border);
+      border-bottom-left-radius: 5px;
+    }
+
+    .a-input-wrap {
+      display: flex;
+      gap: 10px;
+    }
+
+    #avvocatoIn {
+      flex: 1;
+      padding: 12px 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      border-radius: 50px;
+      color: white;
+      font-size: 15px;
+      outline: none;
+    }
+
+    #avvocatoIn::placeholder {
+      color: var(--text-secondary);
+    }
+
+    #avvocatoIn:focus {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(118, 75, 162, 0.5);
+    }
+
+    #avvocatoSnd {
+      background: var(--primary-gradient);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    #avvocatoSnd:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
+    }
+
+    #avvocatoSnd:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Code Block */
+    .code-demo {
+      background: #1a1a1a;
+      border: 1px solid var(--glass-border);
+      border-radius: 15px;
+      padding: 30px;
+      margin-top: 30px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .code-demo::before {
+      content: 'DEMO';
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--primary-gradient);
+      color: white;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .code-demo code {
+      color: #f8f8f2;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      display: block;
+      overflow-x: auto;
+    }
+
+    /* Footer */
+    footer {
+      padding: 50px;
+      text-align: center;
+      border-top: 1px solid var(--glass-border);
+      background: rgba(10, 10, 10, 0.8);
+      backdrop-filter: blur(20px);
+    }
+
+    .footer-content {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* Responsive */
+    @media (max-width: 968px) {
+      .hero-content {
+        grid-template-columns: 1fr;
+        gap: 40px;
       }
 
       .nav-links {
-          display: flex;
-          gap: 40px;
-          list-style: none;
+        display: none;
       }
 
-      .nav-links a {
-          color: var(--text-secondary);
-          text-decoration: none;
-          font-weight: 500;
-          transition: all 0.3s ease;
-          position: relative;
+      nav {
+        padding: 20px 30px;
       }
 
-      .nav-links a::after {
-          content: '';
-          position: absolute;
-          bottom: -5px;
-          left: 0;
-          width: 0;
-          height: 2px;
-          background: var(--primary-gradient);
-          transition: width 0.3s ease;
-      }
-
-      .nav-links a:hover {
-          color: var(--text-primary);
-      }
-
-      .nav-links a:hover::after {
-          width: 100%;
-      }
-
-      /* Hero Section */
-      .hero {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 120px 50px 80px;
-          position: relative;
-      }
-
-      .hero-content {
-          max-width: 1400px;
-          width: 100%;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 80px;
-          align-items: center;
-      }
-
-      .hero-text h1 {
-          font-size: clamp(48px, 6vw, 72px);
-          font-weight: 900;
-          line-height: 1.1;
-          margin-bottom: 30px;
-          background: linear-gradient(135deg, #ffffff 0%, #b8b8b8 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          animation: fadeInUp 1s ease-out;
-      }
-
-      .gradient-text {
-          background: var(--primary-gradient);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-      }
-
-      .hero-text p {
-          font-size: 20px;
-          color: var(--text-secondary);
-          margin-bottom: 40px;
-          animation: fadeInUp 1s ease-out 0.2s both;
-      }
-
-      @keyframes fadeInUp {
-          from {
-              opacity: 0;
-              transform: translateY(30px);
-          }
-          to {
-              opacity: 1;
-              transform: translateY(0);
-          }
-      }
-
-      .cta-buttons {
-          display: flex;
-          gap: 20px;
-          animation: fadeInUp 1s ease-out 0.4s both;
-      }
-
-      .btn {
-          padding: 15px 35px;
-          font-size: 16px;
-          font-weight: 600;
-          border: none;
-          border-radius: 50px;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          text-decoration: none;
-          display: inline-block;
-          position: relative;
-          overflow: hidden;
-      }
-
-      .btn-primary {
-          background: var(--primary-gradient);
-          color: white;
-          box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
-      }
-
-      .btn-primary:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 15px 40px rgba(118, 75, 162, 0.4);
-      }
-
-      .btn-secondary {
-          background: var(--glass-bg);
-          color: var(--text-primary);
-          border: 1px solid var(--glass-border);
-          backdrop-filter: blur(10px);
-      }
-
-      .btn-secondary:hover {
-          background: rgba(255, 255, 255, 0.1);
-          border-color: rgba(255, 255, 255, 0.2);
-      }
-
-      /* 3D Card */
-      .hero-visual {
-          perspective: 1000px;
-          animation: fadeIn 1s ease-out 0.6s both;
-      }
-
-      @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-      }
-
-      .glass-card {
-          background: var(--glass-bg);
-          border: 1px solid var(--glass-border);
-          border-radius: 20px;
-          padding: 40px;
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-          transform-style: preserve-3d;
-          transition: transform 0.3s ease;
-      }
-
-      .glass-card:hover {
-          transform: rotateY(5deg) rotateX(-5deg);
-      }
-
-      .card-icon {
-          width: 80px;
-          height: 80px;
-          margin-bottom: 20px;
-          background: var(--primary-gradient);
-          border-radius: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 36px;
-          box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
-      }
-
-      /* Sections */
       section {
-          padding: 100px 50px;
-          max-width: 1400px;
-          margin: 0 auto;
+        padding: 80px 30px;
       }
 
-      .section-header {
-          text-align: center;
-          margin-bottom: 80px;
-      }
-
-      .section-header h2 {
-          font-size: clamp(36px, 4vw, 48px);
-          font-weight: 800;
-          margin-bottom: 20px;
-          background: linear-gradient(135deg, #ffffff 0%, #b8b8b8 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-      }
-
-      .section-header p {
-          font-size: 20px;
-          color: var(--text-secondary);
-          max-width: 700px;
-          margin: 0 auto;
-      }
-
-      /* Features Grid */
-      .features-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-          gap: 30px;
-      }
-
-      .feature-card {
-          background: var(--glass-bg);
-          border: 1px solid var(--glass-border);
-          border-radius: 20px;
-          padding: 40px;
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          transition: all 0.3s ease;
-          position: relative;
-          overflow: hidden;
-      }
-
-      .feature-card::before {
-          content: '';
-          position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: radial-gradient(circle, rgba(118, 75, 162, 0.1) 0%, transparent 70%);
-          transition: all 0.5s ease;
-          opacity: 0;
-      }
-
-      .feature-card:hover {
-          transform: translateY(-5px);
-          border-color: rgba(118, 75, 162, 0.3);
-      }
-
-      .feature-card:hover::before {
-          opacity: 1;
-      }
-
-      .feature-icon {
-          width: 60px;
-          height: 60px;
-          background: var(--primary-gradient);
-          border-radius: 15px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 28px;
-          margin-bottom: 20px;
-      }
-
-      .feature-card h3 {
-          font-size: 24px;
-          margin-bottom: 15px;
-      }
-
-      .feature-card p {
-          color: var(--text-secondary);
-          line-height: 1.8;
-      }
-
-      /* Agent Cards - Changed to stacked layout */
-      .agents-container {
-          display: flex;
-          flex-direction: column;
-          gap: 30px;
-          max-width: 1000px;
-          margin: 0 auto;
-      }
-
-      .agent-card {
-          background: linear-gradient(135deg, rgba(118, 75, 162, 0.1) 0%, rgba(245, 87, 108, 0.1) 100%);
-          border: 1px solid var(--glass-border);
-          border-radius: 25px;
-          padding: 40px;
-          position: relative;
-          /* CRITICAL: Changed from 'overflow: hidden' to 'visible' to allow chat to expand */
-          overflow: visible;
-          transition: all 0.4s ease;
-          width: 100%;
-      }
-
-      /* Removed the ::after animation that might interfere */
-
-      .agent-card:hover {
-          transform: translateY(-5px);
-          border-color: rgba(118, 75, 162, 0.5);
-          box-shadow: 0 15px 40px rgba(118, 75, 162, 0.2);
-      }
-
-      .agent-name {
-          font-size: 32px;
-          font-weight: 800;
-          margin-bottom: 20px;
-          background: var(--primary-gradient);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-      }
-
-      /* DAIMON SPECIFIC STYLES - ISOLATED NAMESPACE */
       .daimon-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 20px;
-      }
-
-      .daimon-title-section {
-          flex: 1;
-      }
-
-      .greek-subtitle {
-          color: var(--text-secondary);
-          font-style: italic;
-          font-size: 16px;
-          margin-top: -15px;
-          margin-bottom: 20px;
+        flex-direction: column;
+        gap: 15px;
       }
 
       #daimonBtn {
-          background: var(--primary-gradient);
-          color: white;
-          border: none;
-          padding: 12px 24px;
-          border-radius: 50px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          transition: all 0.3s ease;
-          box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
-          position: relative;
-          z-index: 10;
-          animation: subtleGlow 3s ease-in-out infinite;
+        width: 100%;
+        justify-content: center;
       }
 
-      @keyframes subtleGlow {
-          0%, 100% {
-              box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
-          }
-          50% {
-              box-shadow: 0 15px 40px rgba(118, 75, 162, 0.5);
-          }
-      }
-
-      #daimonBtn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 20px 50px rgba(118, 75, 162, 0.6);
-          animation: none;
-      }
-
-      #daimonArr {
-          width: 16px;
-          height: 16px;
-          transition: transform 0.3s ease;
-      }
-
-      #daimonArr.rot {
-          transform: rotate(180deg);
-      }
-
-      /* Daimon Chat Box - Improved for stacked layout */
-      #daimonBox {
-          height: 0;
-          overflow: hidden;
-          transition: height 0.5s ease;
-          margin-top: 30px;
-      }
-
-      #daimonBox.show {
-          height: 500px;
-      }
-
-      .d-chat-inner {
-          background: linear-gradient(135deg, rgba(10, 10, 10, 0.95) 0%, rgba(20, 20, 20, 0.95) 100%);
-          border: 1px solid rgba(118, 75, 162, 0.3);
-          border-radius: 20px;
-          padding: 25px;
-          height: 470px;
-          display: flex;
-          flex-direction: column;
-          backdrop-filter: blur(15px);
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      }
-
-      .d-chat-header {
-          background: var(--primary-gradient);
-          margin: -25px -25px 25px -25px;
-          padding: 18px 25px;
-          border-radius: 20px 20px 0 0;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          box-shadow: 0 5px 20px rgba(118, 75, 162, 0.3);
-      }
-
-      .d-status {
-          width: 12px;
-          height: 12px;
-          background: #4ade80;
-          border-radius: 50%;
-          box-shadow: 0 0 15px rgba(74, 222, 128, 0.6);
-          animation: pulse 2s infinite;
-      }
-
-      @keyframes pulse {
-          0%, 100% {
-              opacity: 1;
-              transform: scale(1);
-          }
-          50% {
-              opacity: 0.7;
-              transform: scale(1.1);
-          }
-      }
-
-      #daimonMsgs {
-          flex: 1;
-          overflow-y: auto;
-          padding: 20px;
-          background: rgba(0, 0, 0, 0.4);
-          border-radius: 15px;
-          margin-bottom: 20px;
-          scrollbar-width: thin;
-          scrollbar-color: rgba(118, 75, 162, 0.3) transparent;
-      }
-
-      #daimonMsgs::-webkit-scrollbar {
-          width: 8px;
-      }
-
-      #daimonMsgs::-webkit-scrollbar-track {
-          background: rgba(0, 0, 0, 0.2);
-          border-radius: 4px;
-      }
-
-      #daimonMsgs::-webkit-scrollbar-thumb {
-          background: rgba(118, 75, 162, 0.5);
-          border-radius: 4px;
-      }
-
-      #daimonMsgs::-webkit-scrollbar-thumb:hover {
-          background: rgba(118, 75, 162, 0.7);
-      }
-
-      .d-welcome {
-          text-align: center;
-          color: var(--text-secondary);
-          padding: 60px 40px;
-          background: linear-gradient(135deg, rgba(118, 75, 162, 0.05) 0%, rgba(245, 87, 108, 0.05) 100%);
-          border-radius: 12px;
-          margin: 20px;
-      }
-
-      .d-welcome h4 {
-          color: var(--text-primary);
-          font-size: 1.3em;
-          margin-bottom: 12px;
-      }
-
-      .d-welcome p {
-          color: #999;
-          font-size: 0.95em;
-      }
-
-      .d-msg {
-          margin-bottom: 15px;
-          display: flex;
-          animation: fadeInUp 0.3s ease;
-      }
-
-      .d-msg.user {
-          justify-content: flex-end;
-      }
-
-      .d-msg-content {
-          max-width: 70%;
-          padding: 12px 18px;
-          border-radius: 20px;
-          font-size: 15px;
-      }
-
-      .d-msg.user .d-msg-content {
-          background: var(--primary-gradient);
-          color: white;
-          border-bottom-right-radius: 5px;
-      }
-
-      .d-msg.assistant .d-msg-content {
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid var(--glass-border);
-          border-bottom-left-radius: 5px;
-      }
-
-      .d-input-wrap {
-          display: flex;
-          gap: 10px;
-      }
-
-      #daimonIn {
-          flex: 1;
-          padding: 12px 20px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid var(--glass-border);
-          border-radius: 50px;
-          color: white;
-          font-size: 15px;
-          outline: none;
-      }
-
-      #daimonIn::placeholder {
-          color: var(--text-secondary);
-      }
-
-      #daimonIn:focus {
-          background: rgba(255, 255, 255, 0.08);
-          border-color: rgba(118, 75, 162, 0.5);
-      }
-
-      #daimonSnd {
-          background: var(--primary-gradient);
-          color: white;
-          border: none;
-          padding: 12px 24px;
-          border-radius: 50px;
-          cursor: pointer;
-          font-weight: 600;
-      }
-
-      #daimonSnd:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
-      }
-
-      #daimonSnd:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-      }
-
-      /* AVVOCATO SPECIFIC STYLES - ISOLATED NAMESPACE */
       .avvocato-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 20px;
-      }
-
-      .avvocato-title-section {
-          flex: 1;
-      }
-
-      .legal-subtitle {
-          color: var(--text-secondary);
-          font-style: italic;
-          font-size: 16px;
-          margin-top: -15px;
-          margin-bottom: 20px;
+        flex-direction: column;
+        gap: 15px;
       }
 
       #avvocatoBtn {
-          background: var(--primary-gradient);
-          color: white;
-          border: none;
-          padding: 12px 24px;
-          border-radius: 50px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          transition: all 0.3s ease;
-          box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
-          position: relative;
-          z-index: 10;
-          animation: subtleGlow 3s ease-in-out infinite;
+        width: 100%;
+        justify-content: center;
       }
+    }
 
-      #avvocatoBtn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 20px 50px rgba(118, 75, 162, 0.6);
-          animation: none;
+    /* Loading animation */
+    .loading-ring {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
       }
+    }
 
-      #avvocatoArr {
-          width: 16px;
-          height: 16px;
-          transition: transform 0.3s ease;
-      }
+    /* Glow effect */
+    .glow {
+      position: relative;
+    }
 
-      #avvocatoArr.rot {
-          transform: rotate(180deg);
-      }
+    .glow::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: var(--primary-gradient);
+      border-radius: inherit;
+      filter: blur(10px);
+      opacity: 0.5;
+      z-index: -1;
+    }
 
-      /* Avvocato Chat Box */
-      #avvocatoBox {
-          height: 0;
-          overflow: hidden;
-          transition: height 0.5s ease;
-          margin-top: 30px;
-      }
+    /* Weaver Styles */
+    .weaver-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
 
-      #avvocatoBox.show {
-          height: 500px;
-      }
+    .weaver-title-section {
+      margin-bottom: 25px;
+      flex: 1;
+    }
 
-      .a-chat-inner {
-          background: linear-gradient(135deg, rgba(10, 10, 10, 0.95) 0%, rgba(20, 20, 20, 0.95) 100%);
-          border: 1px solid rgba(118, 75, 162, 0.3);
-          border-radius: 20px;
-          padding: 25px;
-          height: 470px;
-          display: flex;
-          flex-direction: column;
-          backdrop-filter: blur(15px);
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      }
+    .weaver-subtitle {
+      display: inline-block;
+      color: rgba(118, 75, 162, 0.9);
+      font-size: 0.85em;
+      font-weight: 500;
+      text-transform: lowercase;
+      letter-spacing: 0.5px;
+      margin-left: 10px;
+      padding: 2px 10px;
+      background: rgba(118, 75, 162, 0.1);
+      border-radius: 12px;
+      border: 1px solid rgba(118, 75, 162, 0.3);
+    }
 
-      .a-chat-header {
-          background: var(--primary-gradient);
-          margin: -25px -25px 25px -25px;
-          padding: 18px 25px;
-          border-radius: 20px 20px 0 0;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          box-shadow: 0 5px 20px rgba(118, 75, 162, 0.3);
-      }
+    #weaverBtn {
+      background: var(--primary-gradient);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
+      animation: subtleGlow 3s ease-in-out infinite;
+    }
 
-      .a-status {
-          width: 12px;
-          height: 12px;
-          background: #4ade80;
-          border-radius: 50%;
-          box-shadow: 0 0 15px rgba(74, 222, 128, 0.6);
-          animation: pulse 2s infinite;
-      }
+    #weaverBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 50px rgba(118, 75, 162, 0.6);
+      animation: none;
+    }
 
-      #avvocatoMsgs {
-          flex: 1;
-          overflow-y: auto;
-          padding: 20px;
-          background: rgba(0, 0, 0, 0.4);
-          border-radius: 15px;
-          margin-bottom: 20px;
-          scrollbar-width: thin;
-          scrollbar-color: rgba(118, 75, 162, 0.3) transparent;
-      }
+    #weaverArr {
+      width: 20px;
+      height: 20px;
+      transition: transform 0.3s ease;
+    }
 
-      #avvocatoMsgs::-webkit-scrollbar {
-          width: 8px;
-      }
+    #weaverArr.rot {
+      transform: rotate(180deg);
+    }
 
-      #avvocatoMsgs::-webkit-scrollbar-track {
-          background: rgba(0, 0, 0, 0.2);
-          border-radius: 4px;
-      }
+    #weaverBox {
+      height: 0;
+      overflow: hidden;
+      transition: height 0.5s ease;
+      margin-top: 30px;
+    }
 
-      #avvocatoMsgs::-webkit-scrollbar-thumb {
-          background: rgba(118, 75, 162, 0.5);
-          border-radius: 4px;
-      }
+    #weaverBox.show {
+      height: 500px;
+    }
 
-      #avvocatoMsgs::-webkit-scrollbar-thumb:hover {
-          background: rgba(118, 75, 162, 0.7);
-      }
+    .w-chat-inner {
+      background: linear-gradient(135deg, rgba(10, 10, 10, 0.95) 0%, rgba(20, 20, 20, 0.95) 100%);
+      border: 1px solid rgba(118, 75, 162, 0.3);
+      border-radius: 20px;
+      padding: 25px;
+      height: 470px;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(15px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
 
-      .a-welcome {
-          text-align: center;
-          color: var(--text-secondary);
-          padding: 60px 40px;
-          background: linear-gradient(135deg, rgba(118, 75, 162, 0.05) 0%, rgba(245, 87, 108, 0.05) 100%);
-          border-radius: 12px;
-          margin: 20px;
-      }
+    .w-chat-header {
+      background: var(--primary-gradient);
+      margin: -25px -25px 25px -25px;
+      padding: 18px 25px;
+      border-radius: 20px 20px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 5px 20px rgba(118, 75, 162, 0.3);
+      gap: 15px;
+    }
 
-      .a-welcome h4 {
-          color: var(--text-primary);
-          font-size: 1.3em;
-          margin-bottom: 12px;
-      }
+    .w-status {
+      width: 8px;
+      height: 8px;
+      background: #4ade80;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #4ade80;
+      animation: pulse 2s ease-in-out infinite;
+    }
 
-      .a-welcome p {
-          color: #999;
-          font-size: 0.95em;
-          line-height: 1.6;
-      }
+    #weaverMsgs {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 15px;
+      margin-bottom: 20px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(118, 75, 162, 0.3) transparent;
+    }
 
-      .a-msg {
-          margin-bottom: 15px;
-          display: flex;
-          animation: fadeInUp 0.3s ease;
-      }
+    #weaverMsgs::-webkit-scrollbar {
+      width: 8px;
+    }
 
-      .a-msg.user {
-          justify-content: flex-end;
-      }
+    #weaverMsgs::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+    }
 
-      .a-msg-content {
-          max-width: 70%;
-          padding: 12px 18px;
-          border-radius: 20px;
-          font-size: 15px;
-      }
+    #weaverMsgs::-webkit-scrollbar-thumb {
+      background: rgba(118, 75, 162, 0.5);
+      border-radius: 4px;
+    }
 
-      .a-msg.user .a-msg-content {
-          background: var(--primary-gradient);
-          color: white;
-          border-bottom-right-radius: 5px;
-      }
+    #weaverMsgs::-webkit-scrollbar-thumb:hover {
+      background: rgba(118, 75, 162, 0.7);
+    }
 
-      .a-msg.assistant .a-msg-content {
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid var(--glass-border);
-          border-bottom-left-radius: 5px;
-      }
+    .w-welcome {
+      text-align: center;
+      color: var(--text-secondary);
+      padding: 60px 40px;
+      background: linear-gradient(135deg, rgba(118, 75, 162, 0.05) 0%, rgba(245, 87, 108, 0.05) 100%);
+      border-radius: 12px;
+      margin: 20px;
+    }
 
-      .a-input-wrap {
-          display: flex;
-          gap: 10px;
-      }
+    .w-welcome h4 {
+      color: var(--text-primary);
+      font-size: 1.3em;
+      margin-bottom: 12px;
+    }
 
-      #avvocatoIn {
-          flex: 1;
-          padding: 12px 20px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid var(--glass-border);
-          border-radius: 50px;
-          color: white;
-          font-size: 15px;
-          outline: none;
-      }
+    .w-welcome p {
+      color: #999;
+      font-size: 0.95em;
+      line-height: 1.6;
+    }
 
-      #avvocatoIn::placeholder {
-          color: var(--text-secondary);
-      }
+    .w-msg {
+      margin-bottom: 15px;
+      display: flex;
+      animation: fadeInUp 0.3s ease;
+    }
 
-      #avvocatoIn:focus {
-          background: rgba(255, 255, 255, 0.08);
-          border-color: rgba(118, 75, 162, 0.5);
-      }
+    .w-msg.user {
+      justify-content: flex-end;
+    }
 
-      #avvocatoSnd {
-          background: var(--primary-gradient);
-          color: white;
-          border: none;
-          padding: 12px 24px;
-          border-radius: 50px;
-          cursor: pointer;
-          font-weight: 600;
-      }
+    .w-msg-content {
+      max-width: 70%;
+      padding: 12px 18px;
+      border-radius: 20px;
+      font-size: 15px;
+    }
 
-      #avvocatoSnd:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
-      }
+    .w-msg.user .w-msg-content {
+      background: var(--primary-gradient);
+      color: white;
+      border-bottom-right-radius: 5px;
+    }
 
-      #avvocatoSnd:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-      }
+    .w-msg.assistant .w-msg-content {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--glass-border);
+      border-bottom-left-radius: 5px;
+    }
 
-      /* Code Block */
-      .code-demo {
-          background: #1a1a1a;
-          border: 1px solid var(--glass-border);
-          border-radius: 15px;
-          padding: 30px;
-          margin-top: 30px;
-          position: relative;
-          overflow: hidden;
-      }
+    .w-input-wrap {
+      display: flex;
+      gap: 10px;
+    }
 
-      .code-demo::before {
-          content: 'DEMO';
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          background: var(--primary-gradient);
-          color: white;
-          padding: 5px 15px;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: 600;
-      }
+    #weaverIn {
+      flex: 1;
+      padding: 12px 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      border-radius: 50px;
+      color: white;
+      font-size: 15px;
+      outline: none;
+    }
 
-      .code-demo code {
-          color: #f8f8f2;
-          font-family: 'Monaco', 'Menlo', monospace;
-          font-size: 14px;
-          line-height: 1.6;
-          display: block;
-          overflow-x: auto;
-      }
+    #weaverIn::placeholder {
+      color: var(--text-secondary);
+    }
 
-      /* Footer */
-      footer {
-          padding: 50px;
-          text-align: center;
-          border-top: 1px solid var(--glass-border);
-          background: rgba(10, 10, 10, 0.8);
-          backdrop-filter: blur(20px);
-      }
+    #weaverIn:focus {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(118, 75, 162, 0.5);
+    }
 
-      .footer-content {
-          max-width: 1400px;
-          margin: 0 auto;
-      }
+    #weaverSnd {
+      background: var(--primary-gradient);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: 600;
+    }
 
-      /* Responsive */
-      @media (max-width: 968px) {
-          .hero-content {
-              grid-template-columns: 1fr;
-              gap: 40px;
-          }
+    #weaverSnd:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
+    }
 
-          .nav-links {
-              display: none;
-          }
+    #weaverSnd:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  </style>
 
-          nav {
-              padding: 20px 30px;
-          }
 
-          section {
-              padding: 80px 30px;
-          }
+</head>
 
-          .daimon-header {
-              flex-direction: column;
-              gap: 15px;
-          }
+<body>
+  <!-- Animated Background -->
+  <div class="bg-animation"></div>
 
-          #daimonBtn {
-              width: 100%;
-              justify-content: center;
-          }
+  <!-- Simple particles -->
+  <div class="particle" style="width: 3px; height: 3px; left: 10%; animation-delay: 0s;"></div>
+  <div class="particle" style="width: 2px; height: 2px; left: 20%; animation-delay: 2s;"></div>
+  <div class="particle" style="width: 4px; height: 4px; left: 30%; animation-delay: 4s;"></div>
+  <div class="particle" style="width: 3px; height: 3px; left: 40%; animation-delay: 6s;"></div>
+  <div class="particle" style="width: 2px; height: 2px; left: 50%; animation-delay: 8s;"></div>
 
-          .avvocato-header {
-              flex-direction: column;
-              gap: 15px;
-          }
+  <!-- Navigation -->
+  <nav id="navbar">
+    <div class="nav-container">
+      <div class="logo">AngleNexus</div>
+      <ul class="nav-links">
+        <li><a href="#home">Home</a></li>
+        <li><a href="#agents">Agents</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#research">Research</a></li>
+        <li><a href="contact.html">Contact</a></li>
+        <li><a href="techblog.html">Technical Blog</a></li>
+      </ul>
+    </div>
+  </nav>
 
-          #avvocatoBtn {
-              width: 100%;
-              justify-content: center;
-          }
-      }
-
-      /* Loading animation */
-      .loading-ring {
-          display: inline-block;
-          width: 20px;
-          height: 20px;
-          border: 3px solid rgba(255, 255, 255, 0.3);
-          border-radius: 50%;
-          border-top-color: #fff;
-          animation: spin 1s ease-in-out infinite;
-      }
-
-      @keyframes spin {
-          to { transform: rotate(360deg); }
-      }
-
-      /* Glow effect */
-      .glow {
-          position: relative;
-      }
-
-      .glow::before {
-          content: '';
-          position: absolute;
-          top: -2px;
-          left: -2px;
-          right: -2px;
-          bottom: -2px;
-          background: var(--primary-gradient);
-          border-radius: inherit;
-          filter: blur(10px);
-          opacity: 0.5;
-          z-index: -1;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Animated Background -->
-    <div class="bg-animation"></div>
-
-    <!-- Simple particles -->
-    <div class="particle" style="width: 3px; height: 3px; left: 10%; animation-delay: 0s;"></div>
-    <div class="particle" style="width: 2px; height: 2px; left: 20%; animation-delay: 2s;"></div>
-    <div class="particle" style="width: 4px; height: 4px; left: 30%; animation-delay: 4s;"></div>
-    <div class="particle" style="width: 3px; height: 3px; left: 40%; animation-delay: 6s;"></div>
-    <div class="particle" style="width: 2px; height: 2px; left: 50%; animation-delay: 8s;"></div>
-
-    <!-- Navigation -->
-    <nav id="navbar">
-      <div class="nav-container">
-	<div class="logo">AngleNexus</div>
-	<ul class="nav-links">
-	  <li><a href="#home">Home</a></li>
-	  <li><a href="#agents">Agents</a></li>
-	  <li><a href="#about">About</a></li>
-	  <li><a href="#research">Research</a></li>
-	  <li><a href="contact.html">Contact</a></li>
-	  <li><a href="techblog.html">Technical Blog</a></li>
-	</ul>
-      </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <section class="hero" id="home">
-      <div class="hero-content">
-	<div class="hero-text">
-	  <h1>Foundational RL on <span class="gradient-text">Scalable AI Infrastructure</span></h1>
-	  <p>Reinforcement Learning Foundational Models and Agents taking real-world actions to learn from experience.</p>
-	  <div class="cta-buttons">
-	    <a href="#agents" class="btn btn-primary">Explore Our Agents</a>
-	    <a href="#research" class="btn btn-secondary">View Research</a>
-	  </div>
-	</div>
-	<div class="hero-visual">
-	  <div class="glass-card">
-	    <h3>Next-Gen AI Platform</h3>
-	    <p>Angle is our AI research team, and Nexus is a
-    high-velocity AI infra. Combined, AngleNexus builds foundational
-    models powered by reinforcement learning with the Next-GenAI platform.</p>
-
-	    <!-- Video Section -->
-	    <div style="margin-top: 30px; margin-bottom: 20px;">
-	      <div style="position: relative; border-radius: 15px; overflow: hidden; background: #000; height: 315px; display: flex; align-items: center; justify-content: center;">
-		<img
-		  src="https://ai.stanford.edu/~wzou/gameplay.gif"
-		  alt="RL Agent Playing Atari"
-		  style="max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; border-radius: 15px;"
-		  />
-		<div style="position: absolute; top: 10px; right: 10px; display: flex; align-items: center; background: rgba(0, 0, 0, 0.7); padding: 5px 15px; border-radius: 20px;">
-		  <div class="loading-ring" style="width: 12px; height: 12px; border-width: 2px;"></div>
-		  <span style="margin-left: 8px; color: var(--text-secondary); font-size: 14px;">Live System</span>
-		</div>
-	      </div>
-	    </div>
-	  </div>
-	</div>
-      </div>
-    </section>
-    
-    <!-- Agents Section (MOVED UP) -->
-    <section id="agents">
-      <div class="section-header">
-	<h2>Meet Our <span class="gradient-text">Intelligent Agents</span></h2>
-	<p>Specialized AI agents optimized for real-world performance</p>
-      </div>
-
-      <div class="agents-container">
-	<!-- Daimon Agent (First) - FULL WIDTH -->
-	<div class="agent-card">
-	  <div class="daimon-header">
-	    <div class="daimon-title-section">
-	      <h3 class="agent-name">Daimon</h3>
-	      <p class="greek-subtitle">δαίμων - advisor spirit</p>
-	      <p style="max-width: 600px;">Your intelligent guiding companion in financial knowledge powered by reinforcement learning. Daimon provides thoughtful suggestions, answers complex questions, and assists with analytical tasks through natural conversation.</p>
-	    </div>
-	    <button id="daimonBtn" onclick="toggleDaimon()">
-	      Try Daimon
-	      <svg id="daimonArr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-		<polyline points="6 9 12 15 18 9"></polyline>
-	      </svg>
-	    </button>
-	  </div>
-
-	  <div id="daimonBox">
-	    <div class="d-chat-inner">
-	      <div class="d-chat-header">
-		<div class="d-status"></div>
-		<span style="font-weight: 600; font-size: 1.1em;">Daimon Interface</span>
-		<span style="margin-left: auto; font-size: 14px; opacity: 0.9;">Connected: nexus server</span>
-	      </div>
-	      <div id="daimonMsgs">
-		<div class="d-welcome">
-		  <h4 style="margin-bottom: 10px; font-size: 1.2em;">Welcome to Daimon</h4>
-		  <p style="color: #999;">Your advisor spirit is ready to assist you. Type your question below to begin.</p>
-		</div>
-	      </div>
-	      <div class="d-input-wrap">
-		<input type="text" id="daimonIn" placeholder="Ask Daimon for guidance..." onkeypress="if(event.key==='Enter')sendDaimon()">
-		<button id="daimonSnd" onclick="sendDaimon()">Send</button>
-	      </div>
-	    </div>
-	  </div>
-	</div>
-
-	<!-- Avvocato Agent (Second) - FULL WIDTH -->
-	<div class="agent-card">
-	  <div class="avvocato-header">
-	    <div class="avvocato-title-section">
-	      <h3 class="agent-name">Avvocato</h3>
-	      <p class="legal-subtitle">legal guide</p>
-	      <p style="max-width: 600px;">Your helpful assistant with legal expertise. Avvocato remembers many of the codes in US law, while noting that Avvocato is only here to help. It isn't qualified as a legal advisor, so please double-check your findings.</p>
-	    </div>
-	    <button id="avvocatoBtn" onclick="toggleAvvocato()">
-	      Try Avvocato
-	      <svg id="avvocatoArr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-		<polyline points="6 9 12 15 18 9"></polyline>
-	      </svg>
-	    </button>
-	  </div>
-
-	  <div id="avvocatoBox">
-	    <div class="a-chat-inner">
-	      <div class="a-chat-header">
-		<div class="a-status"></div>
-		<span style="font-weight: 600; font-size: 1.1em;">Avvocato Interface</span>
-		<span style="margin-left: auto; font-size: 14px; opacity: 0.9;">Legal Assistant Active</span>
-	      </div>
-	      <div id="avvocatoMsgs">
-		<div class="a-welcome">
-		  <h4 style="margin-bottom: 10px; font-size: 1.2em;">Welcome to Avvocato</h4>
-		  <p style="color: #999;">I'm here to help with legal questions and provide information about US law. Remember: I'm an assistant tool, not a qualified legal advisor. Please verify any information with a licensed attorney.</p>
-		</div>
-	      </div>
-	      <div class="a-input-wrap">
-		<input type="text" id="avvocatoIn" placeholder="Ask about legal matters..." onkeypress="if(event.key==='Enter')sendAvvocato()">
-		<button id="avvocatoSnd" onclick="sendAvvocato()">Send</button>
-	      </div>
-	    </div>
-	  </div>
-	</div>
-
-	<!-- Sophon Agent (Third) - FULL WIDTH -->
-	<div class="agent-card">
-	  <h3 class="agent-name">Sophon</h3>
-	  <p style="margin-bottom: 20px;">The interface agent that determines what users see. Sophon discovers, shows interactive interfaces, runs programs, and adapts to user preferences.</p>
-	  <p>When users input prompts, Sophon interprets requests and orchestrates relevant UX and backend components for comprehensive responses - from interactive stock charts to document viewers.</p>
-	  <div class="btn btn-secondary glow" style="margin-top: 30px; width: fit-content;">
-	    Coming soon.
-	  </div>
-	</div>
-
-	<!-- Weaver Agent (Fourth) - FULL WIDTH -->
-	<div class="agent-card">
-	  <h3 class="agent-name">Weaver</h3>
-	  <p style="margin-bottom: 20px;">The information agent that weaves a web of connections between user questions and the most up-to-date information sources.</p>
-	  <p>Lightning-fast and nimble, Weaver finds user-customized, suitable, and current information sources tailored to your needs.</p>
-	  <div class="code-demo">
-	    <code>curl -X POST http://54.148.152.214:8000/weaver \<br>
-	      -H "Content-Type: application/json" \<br>
-	      -d '{"user_input": "Your financial question here"}'</code>
-	  </div>
-	</div>
-      </div>
-    </section>
-
-    <!-- About Section (MOVED DOWN) -->
-    <section id="about">
-      <div class="section-header">
-	<h2>Why <span class="gradient-text">Reinforcement Learning</span>?</h2>
-	<p>Going beyond traditional AI to create systems that truly understand consequences and rewards</p>
-      </div>
-
-      <div class="features-grid">
-	<div class="feature-card">
-	  <h3>Real-World Actions</h3>
-	  <p>Unlike generative LLMs, our RL models account for penalties and rewards of taking real actions, significantly reducing hallucinations and improving decision quality.</p>
-	</div>
-
-	<div class="feature-card">
-	  <h3>Unified AI Infrastructure</h3>
-	  <p>A comprehensive platform that unifies RL systems, addressing the fragmentation that even major AI labs face with environment states, action spaces, and reward models.</p>
-	</div>
-
-	<div class="feature-card">
-	  <h3>High-Calibre Decisions</h3>
-	  <p>Each RL decision carries higher value than text generation. Our engineering excellence and efficient algorithms capture critical signals for production reliability.</p>
-	</div>
-      </div>
-
-      <!-- Research Focus Areas -->
-      <div style="margin-top: 60px;">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto;">
-	  <div style="padding: 20px; background: rgba(118, 75, 162, 0.1); border-radius: 15px;">
-	    <h4>Planning</h4>
-	  </div>
-	  <div style="padding: 20px; background: rgba(118, 75, 162, 0.1); border-radius: 15px;">
-	    <h4>Travel</h4>
-	  </div>
-	  <div style="padding: 20px; background: rgba(118, 75, 162, 0.1); border-radius: 15px;">
-	    <h4>Finance</h4>
-	  </div>
-	  <div style="padding: 20px; background: rgba(118, 75, 162, 0.1); border-radius: 15px;">
-	    <h4>GenAI Alignment</h4>
-	  </div>
-	  <div style="padding: 20px; background: rgba(118, 75, 162, 0.1); border-radius: 15px;">
-	    <h4>Gaming</h4>
-	  </div>
+  <!-- Hero Section -->
+  <section class="hero" id="home">
+    <div class="hero-content">
+      <div class="hero-text">
+        <h1>Foundational RL on <span class="gradient-text">Scalable AI Infrastructure</span></h1>
+        <p>Reinforcement Learning Foundational Models and Agents taking real-world actions to learn from experience.</p>
+        <div class="cta-buttons">
+          <a href="#agents" class="btn btn-primary">Explore Our Agents</a>
+          <a href="#research" class="btn btn-secondary">View Research</a>
         </div>
       </div>
-    </section>
+      <div class="hero-visual">
+        <div class="glass-card">
+          <h3>Next-Gen AI Platform</h3>
+          <p>Angle is our AI research team, and Nexus is a
+            high-velocity AI infra. Combined, AngleNexus builds foundational
+            models powered by reinforcement learning with the Next-GenAI platform.</p>
 
-    <!-- Research Section -->
-    <section id="research">
-      <div class="section-header">
-	<h2>Cutting-Edge <span class="gradient-text">Research</span></h2>
-	<p>Advancing the frontier of Reinforcement Learning with breakthrough algorithms</p>
+          <!-- Video Section -->
+          <div style="margin-top: 30px; margin-bottom: 20px;">
+            <div
+              style="position: relative; border-radius: 15px; overflow: hidden; background: #000; height: 315px; display: flex; align-items: center; justify-content: center;">
+              <img src="https://ai.stanford.edu/~wzou/gameplay.gif" alt="RL Agent Playing Atari"
+                style="max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; border-radius: 15px;" />
+              <div
+                style="position: absolute; top: 10px; right: 10px; display: flex; align-items: center; background: rgba(0, 0, 0, 0.7); padding: 5px 15px; border-radius: 20px;">
+                <div class="loading-ring" style="width: 12px; height: 12px; border-width: 2px;"></div>
+                <span style="margin-left: 8px; color: var(--text-secondary); font-size: 14px;">Live System</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agents Section (MOVED UP) -->
+  <section id="agents">
+    <div class="section-header">
+      <h2>Meet Our <span class="gradient-text">Intelligent Agents</span></h2>
+      <p>Specialized AI agents optimized for real-world performance</p>
+    </div>
+
+    <div class="agents-container">
+      <!-- Daimon Agent (First) - FULL WIDTH -->
+      <div class="agent-card">
+        <div class="daimon-header">
+          <div class="daimon-title-section">
+            <h3 class="agent-name">Daimon</h3>
+            <p class="greek-subtitle">δαίμων - advisor spirit</p>
+            <p style="max-width: 600px;">Your intelligent guiding companion in financial knowledge powered by
+              reinforcement learning. Daimon provides thoughtful suggestions, answers complex questions, and assists
+              with analytical tasks through natural conversation.</p>
+          </div>
+          <button id="daimonBtn" onclick="toggleDaimon()">
+            Try Daimon
+            <svg id="daimonArr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <div id="daimonBox">
+          <div class="d-chat-inner">
+            <div class="d-chat-header">
+              <div class="d-status"></div>
+              <span style="font-weight: 600; font-size: 1.1em;">Daimon Interface</span>
+              <span style="margin-left: auto; font-size: 14px; opacity: 0.9;">Connected: nexus server</span>
+            </div>
+            <div id="daimonMsgs">
+              <div class="d-welcome">
+                <h4 style="margin-bottom: 10px; font-size: 1.2em;">Welcome to Daimon</h4>
+                <p style="color: #999;">Your advisor spirit is ready to assist you. Type your question below to begin.
+                </p>
+              </div>
+            </div>
+            <div class="d-input-wrap">
+              <input type="text" id="daimonIn" placeholder="Ask Daimon for guidance..."
+                onkeypress="if(event.key==='Enter')sendDaimon()">
+              <button id="daimonSnd" onclick="sendDaimon()">Send</button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="glass-card" style="max-width: 900px; margin: 0 auto;">
-	
-	<!-- Paper 1 -->
-	<div style="margin-bottom: 35px; padding: 25px; background: rgba(118, 75, 162, 0.05); border-radius: 15px; border-left: 4px solid var(--accent-purple);">
-	  <h4 style="font-size: 18px; margin-bottom: 10px; color: var(--text-primary);">
-	    Enhanced Dynamic Modulation with Global Recurrent Inhibition Networks for Multi-task Reinforcement Learning
-	  </h4>
-	  <p style="font-style: italic; color: var(--text-secondary); margin-bottom: 10px; font-size: 14px;">
-	    Under review at ICLR 2026
-	  </p>
-	  <a href="https://ai.stanford.edu/~wzou/grin.pdf" target="_blank" class="btn btn-secondary" style="display: inline-block; padding: 8px 20px; font-size: 14px;">
-	    View PDF
-	  </a>
-	</div>
+      <!-- Avvocato Agent (Second) - FULL WIDTH -->
+      <div class="agent-card">
+        <div class="avvocato-header">
+          <div class="avvocato-title-section">
+            <h3 class="agent-name">Avvocato</h3>
+            <p class="legal-subtitle">legal guide</p>
+            <p style="max-width: 600px;">Your helpful assistant with legal expertise. Avvocato remembers many of the
+              codes in US law, while noting that Avvocato is only here to help. It isn't qualified as a legal advisor,
+              so please double-check your findings.</p>
+          </div>
+          <button id="avvocatoBtn" onclick="toggleAvvocato()">
+            Try Avvocato
+            <svg id="avvocatoArr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
 
-	<!-- Paper 2 - Neural Inhibition (moved from previous versions) -->
-	<div style="margin-bottom: 35px; padding: 25px; background: rgba(118, 75, 162, 0.05); border-radius: 15px; border-left: 4px solid var(--accent-purple);">
-	  <h4 style="font-size: 18px; margin-bottom: 10px; color: var(--text-primary);">
-	    Neural Inhibition Improves Dynamic Routing and Mixture of Experts
-	  </h4>
-	  <p style="font-style: italic; color: var(--text-secondary); margin-bottom: 10px; font-size: 14px;">
-	    arxiv paper 2025
-	  </p>
-	  <a href="https://arxiv.org/pdf/2507.03221" target="_blank" class="btn btn-secondary" style="display: inline-block; padding: 8px 20px; font-size: 14px;">
-	    View PDF
-	  </a>
-	</div>
-
-	<!-- Paper 3 - Realistic CDSS -->
-	<div style="margin-bottom: 35px; padding: 25px; background: rgba(118, 75, 162, 0.05); border-radius: 15px; border-left: 4px solid var(--accent-purple);">
-	  <h4 style="font-size: 18px; margin-bottom: 10px; color: var(--text-primary);">
-	    Realistic CDSS Drug Dosing with End-to-end Recurrent Q-learning for Dual Vasopressor Control
-	  </h4>
-	  <p style="font-style: italic; color: var(--text-secondary); margin-bottom: 10px; font-size: 14px;">
-	    Neurips 2025 Workshop on TS4H
-	  </p>
-	  <a href="https://arxiv.org/pdf/2510.01508" target="_blank" class="btn btn-secondary" style="display: inline-block; padding: 8px 20px; font-size: 14px;">
-	    View PDF
-	  </a>
-	</div>
-
-	<!-- Paper 4 - Deep Learning Continuous -->
-	<div style="margin-bottom: 35px; padding: 25px; background: rgba(118, 75, 162, 0.05); border-radius: 15px; border-left: 4px solid var(--accent-purple);">
-	  <h4 style="font-size: 18px; margin-bottom: 10px; color: var(--text-primary);">
-	    Deep Learning of Continuous and Structured Policies for Aggregated Heterogeneous Treatment Effects
-	  </h4>
-	  <p style="font-style: italic; color: var(--text-secondary); margin-bottom: 10px; font-size: 14px;">
-	    arxiv paper 2025
-	  </p>
-	  <a href="https://arxiv.org/pdf/2507.05511" target="_blank" class="btn btn-secondary" style="display: inline-block; padding: 8px 20px; font-size: 14px;">
-	    View PDF
-	  </a>
-	</div>
-
-	<!-- Paper 5 - Learning Continuous Treatment -->
-	<div style="margin-bottom: 35px; padding: 25px; background: rgba(118, 75, 162, 0.05); border-radius: 15px; border-left: 4px solid var(--accent-purple);">
-	  <h4 style="font-size: 18px; margin-bottom: 10px; color: var(--text-primary);">
-	    Learning Continuous Treatment Policy and Bipartite Embeddings for Matching with Heterogeneous Causal Effects
-	  </h4>
-	  <div style="margin-bottom: 10px;">
-	    <a href="https://arxiv.org/abs/2004.09703" target="_blank" class="btn btn-secondary" style="display: inline-block; padding: 8px 20px; font-size: 14px; margin-right: 10px;">
-	      arxiv
-	    </a>
-	    <a href="https://github.com/willzyz/hclctpm" target="_blank" class="btn btn-secondary" style="display: inline-block; padding: 8px 20px; font-size: 14px;">
-	      code
-	    </a>
-	  </div>
-	  <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-	    <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 10px;">Alternative/previous versions:</p>
-	    <ul style="list-style: none; padding-left: 0;">
-	      <li style="color: var(--text-primary); font-size: 14px; margin-bottom: 8px;">
-		[1] Aggregating Counterfactual Queries with Neural Architectures to Learn Complex Action Policies 
-		<i style="color: var(--text-secondary);">arxiv 2021</i>
-		<a href="http://ai.stanford.edu/~wzou/aggregating_main.pdf" target="_blank" style="color: var(--accent-purple); margin-left: 10px;">[PDF]</a>
-	      </li>
-	      <li style="color: var(--text-primary); font-size: 14px;">
-		[2] Heterogeneous Causal Learning for Effectiveness Optimization in User Marketing
-		<a href="https://arxiv.org/abs/2004.09702" target="_blank" style="color: var(--accent-purple); margin-left: 10px;">[arxiv]</a>
-	      </li>
-	    </ul>
-	  </div>
-	</div>
-
-	<!-- Paper 6 - Heterogeneous Causal (moved from alternative versions) -->
-	<div style="margin-bottom: 35px; padding: 25px; background: rgba(118, 75, 162, 0.05); border-radius: 15px; border-left: 4px solid var(--accent-purple);">
-	  <h4 style="font-size: 18px; margin-bottom: 10px; color: var(--text-primary);">
-	    Heterogeneous Causal Learning for Optimizing Aggregated Functions in User Growth
-	  </h4>
-	  <p style="font-style: italic; color: var(--text-secondary); margin-bottom: 10px; font-size: 14px;">
-	    arxiv paper 2025
-	  </p>
-	  <a href="https://arxiv.org/pdf/2507.05510" target="_blank" class="btn btn-secondary" style="display: inline-block; padding: 8px 20px; font-size: 14px;">
-	    View PDF
-	  </a>
-	</div>
-
-	<!-- Paper 7 - Bilingual Word Embeddings -->
-	<div style="margin-bottom: 35px; padding: 25px; background: rgba(118, 75, 162, 0.05); border-radius: 15px; border-left: 4px solid var(--accent-purple);">
-	  <h4 style="font-size: 18px; margin-bottom: 10px; color: var(--text-primary);">
-	    Bilingual Word Embeddings for Phrase-based Machine Translation
-	  </h4>
-	  <p style="font-style: italic; color: var(--text-secondary); margin-bottom: 10px; font-size: 14px;">
-	    Empirical Methods in Natural Language Processing (EMNLP), 2013
-	  </p>
-	  <div style="margin-bottom: 15px;">
-	    <a href="http://ai.stanford.edu/~wzou/emnlp2013_ZouSocherCerManning.pdf" target="_blank" class="btn btn-secondary" style="display: inline-block; padding: 8px 20px; font-size: 14px; margin-right: 10px; margin-bottom: 10px;">
-	      PDF
-	    </a>
-	    <a href="http://ai.stanford.edu/~wzou/bibs/emnlp2013.bib" target="_blank" class="btn btn-secondary" style="display: inline-block; padding: 8px 20px; font-size: 14px; margin-right: 10px; margin-bottom: 10px;">
-	      bib
-	    </a>
-	    <a href="http://ai.stanford.edu/~wzou/posters/emnlp_mt_poster.pdf" target="_blank" class="btn btn-secondary" style="display: inline-block; padding: 8px 20px; font-size: 14px; margin-right: 10px; margin-bottom: 10px;">
-	      Poster
-	    </a>
-	    <a href="http://ai.stanford.edu/~wzou/mt/biling_mt_release.tar.gz" target="_blank" class="btn btn-secondary" style="display: inline-block; padding: 8px 20px; font-size: 14px; margin-right: 10px; margin-bottom: 10px;">
-	      Embeddings
-	    </a>
-	    <a href="http://ai.stanford.edu/~wzou/mt/" target="_blank" class="btn btn-secondary" style="display: inline-block; padding: 8px 20px; font-size: 14px; margin-right: 10px; margin-bottom: 10px;">
-	      Project
-	    </a>
-	    <a href="http://ai.stanford.edu/~wzou/mt/mt_presentation.pdf" target="_blank" class="btn btn-secondary" style="display: inline-block; padding: 8px 20px; font-size: 14px; margin-right: 10px; margin-bottom: 10px;">
-	      Slides
-	    </a>
-	    <a href="http://ai.stanford.edu/~wzou/zh_sim.txt" target="_blank" class="btn btn-secondary" style="display: inline-block; padding: 8px 20px; font-size: 14px; margin-bottom: 10px;">
-	      Dataset
-	    </a>
-	  </div>
-	  <p style="font-size: 14px; font-style: italic;">
-	    The first application of deep learning for machine translation.
-	  </p>
-	</div>
+        <div id="avvocatoBox">
+          <div class="a-chat-inner">
+            <div class="a-chat-header">
+              <div class="a-status"></div>
+              <span style="font-weight: 600; font-size: 1.1em;">Avvocato Interface</span>
+              <span style="margin-left: auto; font-size: 14px; opacity: 0.9;">Legal Assistant Active</span>
+            </div>
+            <div id="avvocatoMsgs">
+              <div class="a-welcome">
+                <h4 style="margin-bottom: 10px; font-size: 1.2em;">Welcome to Avvocato</h4>
+                <p style="color: #999;">I'm here to help with legal questions and provide information about US law.
+                  Remember: I'm an assistant tool, not a qualified legal advisor. Please verify any information with a
+                  licensed attorney.</p>
+              </div>
+            </div>
+            <div class="a-input-wrap">
+              <input type="text" id="avvocatoIn" placeholder="Ask about legal matters..."
+                onkeypress="if(event.key==='Enter')sendAvvocato()">
+              <button id="avvocatoSnd" onclick="sendAvvocato()">Send</button>
+            </div>
+          </div>
+        </div>
       </div>
-    </section>
 
-    <!-- Footer -->
-    <footer>
-      <div class="footer-content">
-	<div class="logo" style="margin-bottom: 20px;">AngleNexus</div>
-	<p style="color: var(--text-secondary);">Building the next generation of intelligent systems for the next 5-10 years</p>
-	<p style="color: var(--text-secondary); margin-top: 30px;">© 2024 AngleNexus. All rights reserved.</p>
+      <!-- Sophon Agent (Third) - FULL WIDTH -->
+      <div class="agent-card">
+        <h3 class="agent-name">Sophon</h3>
+        <p style="margin-bottom: 20px;">The interface agent that determines what users see. Sophon discovers, shows
+          interactive interfaces, runs programs, and adapts to user preferences.</p>
+        <p>When users input prompts, Sophon interprets requests and orchestrates relevant UX and backend components for
+          comprehensive responses - from interactive stock charts to document viewers.</p>
+        <div class="btn btn-secondary glow" style="margin-top: 30px; width: fit-content;">
+          Coming soon.
+        </div>
       </div>
-    </footer>
 
-    <!-- ISOLATED DAIMON SCRIPT -->
-    <script>
-      // Daimon functionality - completely isolated
-      let dOpen = false;
+      <!-- Weaver Agent -->
+      <div class="agent-card">
+        <div class="weaver-header">
+          <div class="weaver-title-section">
+            <h3 class="agent-name">Weaver</h3>
+            <!-- <p class="weaver-subtitle">information gatherer</p> -->
+            <p style="max-width: 600px;">Your intelligent research assistant that weaves connections between questions
+              and
+              real-time data sources. Lightning-fast and nimble, Weaver finds user-customized, suitable, and current
+              information tailored to your needs.</p>
+          </div>
+          <button id="weaverBtn" onclick="toggleWeaver()">
+            Try Weaver
+            <svg id="weaverArr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
 
-      function toggleDaimon() {
-          const box = document.getElementById('daimonBox');
-          const arr = document.getElementById('daimonArr');
+        <div id="weaverBox">
+          <div class="w-chat-inner">
+            <div class="w-chat-header">
+              <div class="w-status"></div>
+              <span style="font-weight: 600; font-size: 1.1em;">Weaver Interface</span>
+              <span style="margin-left: auto; font-size: 14px; opacity: 0.9;">Research Assistant Active</span>
+              <button onclick="clearWeaverHistory()"
+                style="background:none;border:none;color:rgba(255,255,255,0.6);cursor:pointer;font-size:12px;padding:4px 8px;border-radius:4px;transition:all 0.2s;margin-left:15px;"
+                onmouseover="this.style.background='rgba(255,255,255,0.1)';this.style.color='#fff'"
+                onmouseout="this.style.background='none';this.style.color='rgba(255,255,255,0.6)'"
+                title="Clear chat history">
+                🗑️ Clear
+              </button>
+            </div>
+            <div id="weaverMsgs">
+              <div class="w-welcome">
+                <h4 style="margin-bottom: 10px; font-size: 1.2em;">Welcome to Weaver</h4>
+                <p style="color: #999;">I gather and synthesize information from multiple sources. Ask me to research
+                  companies, analyze market data, or compile comprehensive reports on any topic.</p>
+              </div>
+            </div>
+            <div class="w-input-wrap">
+              <input type="text" id="weaverIn" placeholder="Ask about any topic..."
+                onkeypress="if(event.key==='Enter')sendWeaver()">
+              <button id="weaverSnd" onclick="sendWeaver()">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-          dOpen = !dOpen;
-          console.log('Daimon toggle:', dOpen);
+    </div>
+  </section>
 
-          if (dOpen) {
-              box.className = 'show';
-              arr.className = 'rot';
-              setTimeout(() => {
-                  document.getElementById('daimonIn').focus();
-              }, 300);
-          } else {
-              box.className = '';
-              arr.className = '';
+  <!-- About Section (MOVED DOWN) -->
+  <section id="about">
+    <div class="section-header">
+      <h2>Why <span class="gradient-text">Reinforcement Learning</span>?</h2>
+      <p>Going beyond traditional AI to create systems that truly understand consequences and rewards</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <h3>Real-World Actions</h3>
+        <p>Unlike generative LLMs, our RL models account for penalties and rewards of taking real actions, significantly
+          reducing hallucinations and improving decision quality.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>Unified AI Infrastructure</h3>
+        <p>A comprehensive platform that unifies RL systems, addressing the fragmentation that even major AI labs face
+          with environment states, action spaces, and reward models.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>High-Calibre Decisions</h3>
+        <p>Each RL decision carries higher value than text generation. Our engineering excellence and efficient
+          algorithms capture critical signals for production reliability.</p>
+      </div>
+    </div>
+
+    <!-- Research Focus Areas -->
+    <div style="margin-top: 60px;">
+      <div
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto;">
+        <div style="padding: 20px; background: rgba(118, 75, 162, 0.1); border-radius: 15px;">
+          <h4>Planning</h4>
+        </div>
+        <div style="padding: 20px; background: rgba(118, 75, 162, 0.1); border-radius: 15px;">
+          <h4>Travel</h4>
+        </div>
+        <div style="padding: 20px; background: rgba(118, 75, 162, 0.1); border-radius: 15px;">
+          <h4>Finance</h4>
+        </div>
+        <div style="padding: 20px; background: rgba(118, 75, 162, 0.1); border-radius: 15px;">
+          <h4>GenAI Alignment</h4>
+        </div>
+        <div style="padding: 20px; background: rgba(118, 75, 162, 0.1); border-radius: 15px;">
+          <h4>Gaming</h4>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Research Section -->
+  <section id="research">
+    <div class="section-header">
+      <h2>Cutting-Edge <span class="gradient-text">Research</span></h2>
+      <p>Advancing the frontier of Reinforcement Learning with breakthrough algorithms</p>
+    </div>
+
+    <div class="glass-card" style="max-width: 900px; margin: 0 auto;">
+
+      <!-- Paper 1 -->
+      <div
+        style="margin-bottom: 35px; padding: 25px; background: rgba(118, 75, 162, 0.05); border-radius: 15px; border-left: 4px solid var(--accent-purple);">
+        <h4 style="font-size: 18px; margin-bottom: 10px; color: var(--text-primary);">
+          Enhanced Dynamic Modulation with Global Recurrent Inhibition Networks for Multi-task Reinforcement Learning
+        </h4>
+        <p style="font-style: italic; color: var(--text-secondary); margin-bottom: 10px; font-size: 14px;">
+          Under review at ICLR 2026
+        </p>
+        <a href="https://ai.stanford.edu/~wzou/grin.pdf" target="_blank" class="btn btn-secondary"
+          style="display: inline-block; padding: 8px 20px; font-size: 14px;">
+          View PDF
+        </a>
+      </div>
+
+      <!-- Paper 2 - Neural Inhibition (moved from previous versions) -->
+      <div
+        style="margin-bottom: 35px; padding: 25px; background: rgba(118, 75, 162, 0.05); border-radius: 15px; border-left: 4px solid var(--accent-purple);">
+        <h4 style="font-size: 18px; margin-bottom: 10px; color: var(--text-primary);">
+          Neural Inhibition Improves Dynamic Routing and Mixture of Experts
+        </h4>
+        <p style="font-style: italic; color: var(--text-secondary); margin-bottom: 10px; font-size: 14px;">
+          arxiv paper 2025
+        </p>
+        <a href="https://arxiv.org/pdf/2507.03221" target="_blank" class="btn btn-secondary"
+          style="display: inline-block; padding: 8px 20px; font-size: 14px;">
+          View PDF
+        </a>
+      </div>
+
+      <!-- Paper 3 - Realistic CDSS -->
+      <div
+        style="margin-bottom: 35px; padding: 25px; background: rgba(118, 75, 162, 0.05); border-radius: 15px; border-left: 4px solid var(--accent-purple);">
+        <h4 style="font-size: 18px; margin-bottom: 10px; color: var(--text-primary);">
+          Realistic CDSS Drug Dosing with End-to-end Recurrent Q-learning for Dual Vasopressor Control
+        </h4>
+        <p style="font-style: italic; color: var(--text-secondary); margin-bottom: 10px; font-size: 14px;">
+          Neurips 2025 Workshop on TS4H
+        </p>
+        <a href="https://arxiv.org/pdf/2510.01508" target="_blank" class="btn btn-secondary"
+          style="display: inline-block; padding: 8px 20px; font-size: 14px;">
+          View PDF
+        </a>
+      </div>
+
+      <!-- Paper 4 - Deep Learning Continuous -->
+      <div
+        style="margin-bottom: 35px; padding: 25px; background: rgba(118, 75, 162, 0.05); border-radius: 15px; border-left: 4px solid var(--accent-purple);">
+        <h4 style="font-size: 18px; margin-bottom: 10px; color: var(--text-primary);">
+          Deep Learning of Continuous and Structured Policies for Aggregated Heterogeneous Treatment Effects
+        </h4>
+        <p style="font-style: italic; color: var(--text-secondary); margin-bottom: 10px; font-size: 14px;">
+          arxiv paper 2025
+        </p>
+        <a href="https://arxiv.org/pdf/2507.05511" target="_blank" class="btn btn-secondary"
+          style="display: inline-block; padding: 8px 20px; font-size: 14px;">
+          View PDF
+        </a>
+      </div>
+
+      <!-- Paper 5 - Learning Continuous Treatment -->
+      <div
+        style="margin-bottom: 35px; padding: 25px; background: rgba(118, 75, 162, 0.05); border-radius: 15px; border-left: 4px solid var(--accent-purple);">
+        <h4 style="font-size: 18px; margin-bottom: 10px; color: var(--text-primary);">
+          Learning Continuous Treatment Policy and Bipartite Embeddings for Matching with Heterogeneous Causal Effects
+        </h4>
+        <div style="margin-bottom: 10px;">
+          <a href="https://arxiv.org/abs/2004.09703" target="_blank" class="btn btn-secondary"
+            style="display: inline-block; padding: 8px 20px; font-size: 14px; margin-right: 10px;">
+            arxiv
+          </a>
+          <a href="https://github.com/willzyz/hclctpm" target="_blank" class="btn btn-secondary"
+            style="display: inline-block; padding: 8px 20px; font-size: 14px;">
+            code
+          </a>
+        </div>
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+          <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 10px;">Alternative/previous versions:
+          </p>
+          <ul style="list-style: none; padding-left: 0;">
+            <li style="color: var(--text-primary); font-size: 14px; margin-bottom: 8px;">
+              [1] Aggregating Counterfactual Queries with Neural Architectures to Learn Complex Action Policies
+              <i style="color: var(--text-secondary);">arxiv 2021</i>
+              <a href="http://ai.stanford.edu/~wzou/aggregating_main.pdf" target="_blank"
+                style="color: var(--accent-purple); margin-left: 10px;">[PDF]</a>
+            </li>
+            <li style="color: var(--text-primary); font-size: 14px;">
+              [2] Heterogeneous Causal Learning for Effectiveness Optimization in User Marketing
+              <a href="https://arxiv.org/abs/2004.09702" target="_blank"
+                style="color: var(--accent-purple); margin-left: 10px;">[arxiv]</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Paper 6 - Heterogeneous Causal (moved from alternative versions) -->
+      <div
+        style="margin-bottom: 35px; padding: 25px; background: rgba(118, 75, 162, 0.05); border-radius: 15px; border-left: 4px solid var(--accent-purple);">
+        <h4 style="font-size: 18px; margin-bottom: 10px; color: var(--text-primary);">
+          Heterogeneous Causal Learning for Optimizing Aggregated Functions in User Growth
+        </h4>
+        <p style="font-style: italic; color: var(--text-secondary); margin-bottom: 10px; font-size: 14px;">
+          arxiv paper 2025
+        </p>
+        <a href="https://arxiv.org/pdf/2507.05510" target="_blank" class="btn btn-secondary"
+          style="display: inline-block; padding: 8px 20px; font-size: 14px;">
+          View PDF
+        </a>
+      </div>
+
+      <!-- Paper 7 - Bilingual Word Embeddings -->
+      <div
+        style="margin-bottom: 35px; padding: 25px; background: rgba(118, 75, 162, 0.05); border-radius: 15px; border-left: 4px solid var(--accent-purple);">
+        <h4 style="font-size: 18px; margin-bottom: 10px; color: var(--text-primary);">
+          Bilingual Word Embeddings for Phrase-based Machine Translation
+        </h4>
+        <p style="font-style: italic; color: var(--text-secondary); margin-bottom: 10px; font-size: 14px;">
+          Empirical Methods in Natural Language Processing (EMNLP), 2013
+        </p>
+        <div style="margin-bottom: 15px;">
+          <a href="http://ai.stanford.edu/~wzou/emnlp2013_ZouSocherCerManning.pdf" target="_blank"
+            class="btn btn-secondary"
+            style="display: inline-block; padding: 8px 20px; font-size: 14px; margin-right: 10px; margin-bottom: 10px;">
+            PDF
+          </a>
+          <a href="http://ai.stanford.edu/~wzou/bibs/emnlp2013.bib" target="_blank" class="btn btn-secondary"
+            style="display: inline-block; padding: 8px 20px; font-size: 14px; margin-right: 10px; margin-bottom: 10px;">
+            bib
+          </a>
+          <a href="http://ai.stanford.edu/~wzou/posters/emnlp_mt_poster.pdf" target="_blank" class="btn btn-secondary"
+            style="display: inline-block; padding: 8px 20px; font-size: 14px; margin-right: 10px; margin-bottom: 10px;">
+            Poster
+          </a>
+          <a href="http://ai.stanford.edu/~wzou/mt/biling_mt_release.tar.gz" target="_blank" class="btn btn-secondary"
+            style="display: inline-block; padding: 8px 20px; font-size: 14px; margin-right: 10px; margin-bottom: 10px;">
+            Embeddings
+          </a>
+          <a href="http://ai.stanford.edu/~wzou/mt/" target="_blank" class="btn btn-secondary"
+            style="display: inline-block; padding: 8px 20px; font-size: 14px; margin-right: 10px; margin-bottom: 10px;">
+            Project
+          </a>
+          <a href="http://ai.stanford.edu/~wzou/mt/mt_presentation.pdf" target="_blank" class="btn btn-secondary"
+            style="display: inline-block; padding: 8px 20px; font-size: 14px; margin-right: 10px; margin-bottom: 10px;">
+            Slides
+          </a>
+          <a href="http://ai.stanford.edu/~wzou/zh_sim.txt" target="_blank" class="btn btn-secondary"
+            style="display: inline-block; padding: 8px 20px; font-size: 14px; margin-bottom: 10px;">
+            Dataset
+          </a>
+        </div>
+        <p style="font-size: 14px; font-style: italic;">
+          The first application of deep learning for machine translation.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="logo" style="margin-bottom: 20px;">AngleNexus</div>
+      <p style="color: var(--text-secondary);">Building the next generation of intelligent systems for the next 5-10
+        years</p>
+      <p style="color: var(--text-secondary); margin-top: 30px;">© 2024 AngleNexus. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- ISOLATED DAIMON SCRIPT -->
+  <script>
+    // Daimon functionality - completely isolated
+    let dOpen = false;
+
+    function toggleDaimon() {
+      const box = document.getElementById('daimonBox');
+      const arr = document.getElementById('daimonArr');
+
+      dOpen = !dOpen;
+      console.log('Daimon toggle:', dOpen);
+
+      if (dOpen) {
+        box.className = 'show';
+        arr.className = 'rot';
+        setTimeout(() => {
+          document.getElementById('daimonIn').focus();
+        }, 300);
+      } else {
+        box.className = '';
+        arr.className = '';
+      }
+    }
+
+    async function sendDaimon() {
+      const input = document.getElementById('daimonIn');
+      const msgs = document.getElementById('daimonMsgs');
+      const text = input.value.trim();
+
+      if (!text) return;
+
+      // Remove welcome
+      const w = msgs.querySelector('.d-welcome');
+      if (w) w.remove();
+
+      // Add user message
+      const uMsg = document.createElement('div');
+      uMsg.className = 'd-msg user';
+      uMsg.innerHTML = `<div class="d-msg-content">${text}</div>`;
+      msgs.appendChild(uMsg);
+
+      input.value = '';
+      input.disabled = true;
+
+      // API call
+      try {
+        const res = await fetch('http://154.54.100.95:5000/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            conversation_id: null,
+            timestamp: new Date().toISOString()
+          })
+        });
+
+        const data = await res.json();
+
+        // Add response
+        const aMsg = document.createElement('div');
+        aMsg.className = 'd-msg assistant';
+        aMsg.innerHTML = `<div class="d-msg-content">${data.message || 'Error'}</div>`;
+        msgs.appendChild(aMsg);
+
+      } catch (e) {
+        const eMsg = document.createElement('div');
+        eMsg.className = 'd-msg assistant';
+        eMsg.innerHTML = `<div class="d-msg-content">Connection error</div>`;
+        msgs.appendChild(eMsg);
+      }
+
+      input.disabled = false;
+      input.focus();
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    // Avvocato functionality - completely isolated
+    let aOpen = false;
+
+    function toggleAvvocato() {
+      const box = document.getElementById('avvocatoBox');
+      const arr = document.getElementById('avvocatoArr');
+
+      aOpen = !aOpen;
+      console.log('Avvocato toggle:', aOpen);
+
+      if (aOpen) {
+        box.className = 'show';
+        arr.className = 'rot';
+        setTimeout(() => {
+          document.getElementById('avvocatoIn').focus();
+        }, 300);
+      } else {
+        box.className = '';
+        arr.className = '';
+      }
+    }
+
+    async function sendAvvocato() {
+      const input = document.getElementById('avvocatoIn');
+      const msgs = document.getElementById('avvocatoMsgs');
+      const text = input.value.trim();
+
+      if (!text) return;
+
+      // Remove welcome
+      const w = msgs.querySelector('.a-welcome');
+      if (w) w.remove();
+
+      // Add user message
+      const uMsg = document.createElement('div');
+      uMsg.className = 'a-msg user';
+      uMsg.innerHTML = `<div class="a-msg-content">${text}</div>`;
+      msgs.appendChild(uMsg);
+
+      input.value = '';
+      input.disabled = true;
+
+      // API call to Avvocato endpoint
+      try {
+        const res = await fetch('http://154.54.100.95:5000/api/chat_avvocato', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            conversation_id: sessionStorage.getItem('avvocato_conversation_id') || null,
+            timestamp: new Date().toISOString()
+          })
+        });
+
+        const data = await res.json();
+
+        // Store conversation ID if provided
+        if (data.conversation_id) {
+          sessionStorage.setItem('avvocato_conversation_id', data.conversation_id);
+        }
+
+        // Add response
+        const aMsg = document.createElement('div');
+        aMsg.className = 'a-msg assistant';
+        aMsg.innerHTML = `<div class="a-msg-content">${data.message || 'I apologize, but I encountered an error. Please try again.'}</div>`;
+        msgs.appendChild(aMsg);
+
+      } catch (e) {
+        const eMsg = document.createElement('div');
+        eMsg.className = 'a-msg assistant';
+        eMsg.innerHTML = `<div class="a-msg-content">I apologize, but I'm unable to connect to the legal assistance service at the moment.</div>`;
+        msgs.appendChild(eMsg);
+      }
+
+      input.disabled = false;
+      input.focus();
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    // Simple navbar scroll only
+    window.addEventListener('scroll', function () {
+      const navbar = document.getElementById('navbar');
+      if (window.scrollY > 50) {
+        navbar.classList.add('scrolled');
+      } else {
+        navbar.classList.remove('scrolled');
+      }
+    });
+
+    // Verify Daimon elements exist
+    console.log('Daimon elements check:', {
+      button: !!document.getElementById('daimonBtn'),
+      box: !!document.getElementById('daimonBox'),
+      input: !!document.getElementById('daimonIn')
+    });
+
+    // Verify Avvocato elements exist
+    console.log('Avvocato elements check:', {
+      button: !!document.getElementById('avvocatoBtn'),
+      box: !!document.getElementById('avvocatoBox'),
+      input: !!document.getElementById('avvocatoIn')
+    });
+
+    console.log('AngleNexus with Daimon and Avvocato loaded');
+  </script>
+
+  <!-- ISOLATED WEAVER SCRIPT -->
+  <script>
+    // AngleNexus JavaScript - Agent Chat Functionality
+
+    // Configuration
+    const API_BASE_URL = 'http://34.215.154.181:8000/chat';
+
+    // Daimon Agent State
+    let daimonOpen = false;
+
+    // Avvocato Agent State
+    let avvocatoOpen = false;
+
+    // Weaver Agent State
+    let weaverOpen = false;
+
+    // LocalStorage keys
+    const WEAVER_STORAGE_KEY = 'weaver_chat_history';
+    const MAX_STORED_MESSAGES = 200; // Limit storage size
+
+    /**
+     * Load Weaver chat history from LocalStorage
+     */
+    function loadWeaverHistory() {
+      try {
+        const stored = localStorage.getItem(WEAVER_STORAGE_KEY);
+        if (!stored) return [];
+
+        const messages = JSON.parse(stored);
+        return Array.isArray(messages) ? messages : [];
+      } catch (e) {
+        console.error('Error loading Weaver history:', e);
+        return [];
+      }
+    }
+
+    /**
+     * Save Weaver chat history to LocalStorage
+     */
+    function saveWeaverHistory(messages) {
+      try {
+        // Keep only the last MAX_STORED_MESSAGES
+        const toStore = messages.slice(-MAX_STORED_MESSAGES);
+        localStorage.setItem(WEAVER_STORAGE_KEY, JSON.stringify(toStore));
+      } catch (e) {
+        console.error('Error saving Weaver history:', e);
+        // If storage is full, try clearing old messages
+        if (e.name === 'QuotaExceededError') {
+          try {
+            const reducedMessages = messages.slice(-50);
+            localStorage.setItem(WEAVER_STORAGE_KEY, JSON.stringify(reducedMessages));
+          } catch (e2) {
+            console.error('Still failed after reducing messages:', e2);
           }
+        }
+      }
+    }
+
+    /**
+     * Clear Weaver chat history
+     */
+    function clearWeaverHistory() {
+      try {
+        localStorage.removeItem(WEAVER_STORAGE_KEY);
+        const msgs = document.getElementById('weaverMsgs');
+        msgs.innerHTML = `
+            <div class="w-welcome">
+                <h4>🕸️ Weaver Intelligence</h4>
+                <p>I gather and synthesize information from multiple sources. Ask me to research companies, analyze market data, or compile comprehensive reports.</p>
+            </div>
+        `;
+      } catch (e) {
+        console.error('Error clearing Weaver history:', e);
+      }
+    }
+
+    /**
+     * Restore Weaver chat messages from history
+     */
+    function restoreWeaverMessages() {
+      const msgs = document.getElementById('weaverMsgs');
+      const history = loadWeaverHistory();
+
+      if (history.length === 0) return;
+
+      // Clear welcome message
+      const welcome = msgs.querySelector('.w-welcome');
+      if (welcome) welcome.remove();
+
+      // Restore each message
+      history.forEach(msg => {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `w-msg ${msg.role}`;
+        msgDiv.innerHTML = `<div class="w-msg-content">${escapeHtml(msg.content)}</div>`;
+        msgs.appendChild(msgDiv);
+      });
+
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    /**
+     * Toggle Daimon chat window
+     */
+    function toggleDaimon() {
+      const box = document.getElementById('daimonBox');
+      const arr = document.getElementById('daimonArr');
+
+      daimonOpen = !daimonOpen;
+
+      if (daimonOpen) {
+        box.classList.add('show');
+        arr.classList.add('rot');
+        // Focus input when opened
+        setTimeout(() => {
+          document.getElementById('daimonIn').focus();
+        }, 300);
+      } else {
+        box.classList.remove('show');
+        arr.classList.remove('rot');
+      }
+    }
+
+    /**
+     * Send message to Daimon agent
+     */
+    async function sendDaimon() {
+      const input = document.getElementById('daimonIn');
+      const msgs = document.getElementById('daimonMsgs');
+      const sendBtn = document.getElementById('daimonSnd');
+
+      const text = input.value.trim();
+      if (!text) return;
+
+      // Clear welcome message if it exists
+      const welcome = msgs.querySelector('.d-welcome');
+      if (welcome) welcome.remove();
+
+      // Add user message
+      const uMsg = document.createElement('div');
+      uMsg.className = 'd-msg user';
+      uMsg.innerHTML = `<div class="d-msg-content">${escapeHtml(text)}</div>`;
+      msgs.appendChild(uMsg);
+
+      input.value = '';
+      input.disabled = true;
+      sendBtn.disabled = true;
+
+      // Add loading indicator
+      const loadingMsg = document.createElement('div');
+      loadingMsg.className = 'd-msg assistant loading-msg';
+      loadingMsg.innerHTML = '<div class="d-msg-content"><div class="loading-ring"></div> Analyzing...</div>';
+      msgs.appendChild(loadingMsg);
+      msgs.scrollTop = msgs.scrollHeight;
+
+      try {
+        const response = await fetch(`http://154.54.100.95:5000/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            model_name: 'o3-mini'
+          })
+        });
+
+        // Remove loading indicator
+        loadingMsg.remove();
+
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Add assistant response
+        const aMsg = document.createElement('div');
+        aMsg.className = 'd-msg assistant';
+        aMsg.innerHTML = `<div class="d-msg-content">${escapeHtml(data.message || 'No response received')}</div>`;
+        msgs.appendChild(aMsg);
+
+      } catch (e) {
+        console.error('Daimon error:', e);
+        loadingMsg.remove();
+
+        const errMsg = document.createElement('div');
+        errMsg.className = 'd-msg assistant';
+        errMsg.innerHTML = '<div class="d-msg-content">Sorry, I encountered an error. Please try again.</div>';
+        msgs.appendChild(errMsg);
       }
 
-      async function sendDaimon() {
-          const input = document.getElementById('daimonIn');
-          const msgs = document.getElementById('daimonMsgs');
-          const text = input.value.trim();
+      input.disabled = false;
+      sendBtn.disabled = false;
+      input.focus();
+      msgs.scrollTop = msgs.scrollHeight;
+    }
 
-          if (!text) return;
+    /**
+     * Toggle Avvocato chat window
+     */
+    function toggleAvvocato() {
+      const box = document.getElementById('avvocatoBox');
+      const arr = document.getElementById('avvocatoArr');
 
-          // Remove welcome
-          const w = msgs.querySelector('.d-welcome');
-          if (w) w.remove();
+      avvocatoOpen = !avvocatoOpen;
 
-          // Add user message
-          const uMsg = document.createElement('div');
-          uMsg.className = 'd-msg user';
-          uMsg.innerHTML = `<div class="d-msg-content">${text}</div>`;
-	  msgs.appendChild(uMsg);
+      if (avvocatoOpen) {
+        box.classList.add('show');
+        arr.classList.add('rot');
+        // Focus input when opened
+        setTimeout(() => {
+          document.getElementById('avvocatoIn').focus();
+        }, 300);
+      } else {
+        box.classList.remove('show');
+        arr.classList.remove('rot');
+      }
+    }
 
-	  input.value = '';
-	  input.disabled = true;
+    /**
+     * Toggle Weaver chat window
+     */
+    function toggleWeaver() {
+      const box = document.getElementById('weaverBox');
+      const arr = document.getElementById('weaverArr');
 
-	  // API call
-	  try {
-	      const res = await fetch('http://154.54.100.95:5000/api/chat', {
-	          method: 'POST',
-		  headers: {'Content-Type': 'application/json'},
-		  body: JSON.stringify({
-		      message: text,
-		      conversation_id: null,
-		      timestamp: new Date().toISOString()
-		  })
-	      });
-	      
-	      const data = await res.json();
-	      
-	      // Add response
-	      const aMsg = document.createElement('div');
-	      aMsg.className = 'd-msg assistant';
-	      aMsg.innerHTML = `<div class="d-msg-content">${data.message || 'Error'}</div>`;
-	      msgs.appendChild(aMsg);
+      weaverOpen = !weaverOpen;
 
-	  } catch (e) {
-	      const eMsg = document.createElement('div');
-	      eMsg.className = 'd-msg assistant';
-	      eMsg.innerHTML = `<div class="d-msg-content">Connection error</div>`;
-	      msgs.appendChild(eMsg);
-	  }
+      if (weaverOpen) {
+        box.classList.add('show');
+        arr.classList.add('rot');
 
-	  input.disabled = false;
-	  input.focus();
-	  msgs.scrollTop = msgs.scrollHeight;
+        // Restore chat history on first open
+        const msgs = document.getElementById('weaverMsgs');
+        const hasMessages = msgs.querySelector('.w-msg');
+        if (!hasMessages) {
+          restoreWeaverMessages();
+        }
+
+        // Focus input when opened
+        setTimeout(() => {
+          document.getElementById('weaverIn').focus();
+        }, 300);
+      } else {
+        box.classList.remove('show');
+        arr.classList.remove('rot');
+      }
+    }
+
+    /**
+     * Send message to Avvocato agent
+     */
+    async function sendAvvocato() {
+      const input = document.getElementById('avvocatoIn');
+      const msgs = document.getElementById('avvocatoMsgs');
+      const sendBtn = document.getElementById('avvocatoSnd');
+
+      const text = input.value.trim();
+      if (!text) return;
+
+      // Clear welcome message if it exists
+      const welcome = msgs.querySelector('.a-welcome');
+      if (welcome) welcome.remove();
+
+      // Add user message
+      const uMsg = document.createElement('div');
+      uMsg.className = 'a-msg user';
+      uMsg.innerHTML = `<div class="a-msg-content">${escapeHtml(text)}</div>`;
+      msgs.appendChild(uMsg);
+
+      input.value = '';
+      input.disabled = true;
+      sendBtn.disabled = true;
+
+      // Add loading indicator
+      const loadingMsg = document.createElement('div');
+      loadingMsg.className = 'a-msg assistant loading-msg';
+      loadingMsg.innerHTML = '<div class="a-msg-content"><div class="loading-ring"></div> Consulting legal references...</div>';
+      msgs.appendChild(loadingMsg);
+      msgs.scrollTop = msgs.scrollHeight;
+
+      try {
+        const response = await fetch(`http://154.54.100.95:5000/api/chat_avvocato`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            model_name: 'o3-mini'
+          })
+        });
+
+        // Remove loading indicator
+        loadingMsg.remove();
+
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Add assistant response
+        const aMsg = document.createElement('div');
+        aMsg.className = 'a-msg assistant';
+        aMsg.innerHTML = `<div class="a-msg-content">${escapeHtml(data.message || 'No response received')}</div>`;
+        msgs.appendChild(aMsg);
+
+      } catch (e) {
+        console.error('Avvocato error:', e);
+        loadingMsg.remove();
+
+        const errMsg = document.createElement('div');
+        errMsg.className = 'a-msg assistant';
+        errMsg.innerHTML = '<div class="a-msg-content">Sorry, I encountered an error. Please try again.</div>';
+        msgs.appendChild(errMsg);
       }
 
-      // Avvocato functionality - completely isolated
-      let aOpen = false;
+      input.disabled = false;
+      sendBtn.disabled = false;
+      input.focus();
+      msgs.scrollTop = msgs.scrollHeight;
+    }
 
-      function toggleAvvocato() {
-          const box = document.getElementById('avvocatoBox');
-          const arr = document.getElementById('avvocatoArr');
+    /**
+     * Send message to Weaver agent
+     */
+    async function sendWeaver() {
+      const input = document.getElementById('weaverIn');
+      const msgs = document.getElementById('weaverMsgs');
+      const sendBtn = document.getElementById('weaverSnd');
 
-          aOpen = !aOpen;
-          console.log('Avvocato toggle:', aOpen);
+      const text = input.value.trim();
+      if (!text) return;
 
-          if (aOpen) {
-              box.className = 'show';
-              arr.className = 'rot';
-              setTimeout(() => {
-                  document.getElementById('avvocatoIn').focus();
-              }, 300);
-          } else {
-              box.className = '';
-              arr.className = '';
+      // Load existing history
+      const history = loadWeaverHistory();
+
+      // Clear welcome message if it exists
+      const welcome = msgs.querySelector('.w-welcome');
+      if (welcome) welcome.remove();
+
+      // Add user message
+      const uMsg = document.createElement('div');
+      uMsg.className = 'w-msg user';
+      uMsg.innerHTML = `<div class="w-msg-content">${escapeHtml(text)}</div>`;
+      msgs.appendChild(uMsg);
+
+      // Save user message to history
+      history.push({
+        role: 'user',
+        content: text,
+        timestamp: new Date().toISOString()
+      });
+      saveWeaverHistory(history);
+
+      input.value = '';
+      input.disabled = true;
+      sendBtn.disabled = true;
+
+      // Add loading indicator
+      const loadingMsg = document.createElement('div');
+      loadingMsg.className = 'w-msg assistant loading-msg';
+      loadingMsg.innerHTML = '<div class="w-msg-content"><div class="loading-ring"></div> Gathering information...</div>';
+      msgs.appendChild(loadingMsg);
+      msgs.scrollTop = msgs.scrollHeight;
+
+      try {
+        // Weaver uses the /chat endpoint with /weaver prefix
+        const response = await fetch('http://34.215.154.181/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: `/weaver ${text}`,
+            model_name: 'o3-mini'
+          })
+        });
+
+        // Remove loading indicator
+        loadingMsg.remove();
+
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}`);
+        }
+
+        const data = await response.json();
+        const responseText = data.message || 'No response received';
+
+        // Add assistant response
+        const aMsg = document.createElement('div');
+        aMsg.className = 'w-msg assistant';
+        aMsg.innerHTML = `<div class="w-msg-content">${escapeHtml(responseText)}</div>`;
+        msgs.appendChild(aMsg);
+
+        // Save assistant message to history
+        history.push({
+          role: 'assistant',
+          content: responseText,
+          timestamp: new Date().toISOString()
+        });
+        saveWeaverHistory(history);
+
+      } catch (e) {
+        console.error('Weaver error:', e);
+        loadingMsg.remove();
+
+        const errorText = 'Sorry, I encountered an error. Please try again.';
+        const errMsg = document.createElement('div');
+        errMsg.className = 'w-msg assistant';
+        errMsg.innerHTML = `<div class="w-msg-content">${errorText}</div>`;
+        msgs.appendChild(errMsg);
+
+        // Save error message to history
+        history.push({
+          role: 'assistant',
+          content: errorText,
+          timestamp: new Date().toISOString()
+        });
+        saveWeaverHistory(history);
+      }
+
+      input.disabled = false;
+      sendBtn.disabled = false;
+      input.focus();
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    /**
+     * Escape HTML to prevent XSS
+     */
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    /**
+     * Initialize on page load
+     */
+    document.addEventListener('DOMContentLoaded', function () {
+      // Navbar scroll effect
+      window.addEventListener('scroll', function () {
+        const navbar = document.getElementById('navbar');
+        if (window.scrollY > 50) {
+          navbar.classList.add('scrolled');
+        } else {
+          navbar.classList.remove('scrolled');
+        }
+      });
+
+      // Smooth scroll for navigation links
+      document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute('href'));
+          if (target) {
+            target.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
           }
-      }
-
-      async function sendAvvocato() {
-          const input = document.getElementById('avvocatoIn');
-          const msgs = document.getElementById('avvocatoMsgs');
-          const text = input.value.trim();
-
-          if (!text) return;
-
-          // Remove welcome
-          const w = msgs.querySelector('.a-welcome');
-          if (w) w.remove();
-
-          // Add user message
-          const uMsg = document.createElement('div');
-          uMsg.className = 'a-msg user';
-          uMsg.innerHTML = `<div class="a-msg-content">${text}</div>`;
-	  msgs.appendChild(uMsg);
-
-	  input.value = '';
-	  input.disabled = true;
-
-	  // API call to Avvocato endpoint
-	  try {
-	      const res = await fetch('http://154.54.100.95:5000/api/chat_avvocato', {
-	          method: 'POST',
-		  headers: {'Content-Type': 'application/json'},
-		  body: JSON.stringify({
-		      message: text,
-		      conversation_id: sessionStorage.getItem('avvocato_conversation_id') || null,
-		      timestamp: new Date().toISOString()
-		  })
-	      });
-	      
-	      const data = await res.json();
-	      
-	      // Store conversation ID if provided
-	      if (data.conversation_id) {
-	          sessionStorage.setItem('avvocato_conversation_id', data.conversation_id);
-	      }
-	      
-	      // Add response
-	      const aMsg = document.createElement('div');
-	      aMsg.className = 'a-msg assistant';
-	      aMsg.innerHTML = `<div class="a-msg-content">${data.message || 'I apologize, but I encountered an error. Please try again.'}</div>`;
-	      msgs.appendChild(aMsg);
-
-	  } catch (e) {
-	      const eMsg = document.createElement('div');
-	      eMsg.className = 'a-msg assistant';
-	      eMsg.innerHTML = `<div class="a-msg-content">I apologize, but I'm unable to connect to the legal assistance service at the moment.</div>`;
-	      msgs.appendChild(eMsg);
-	  }
-
-	  input.disabled = false;
-	  input.focus();
-	  msgs.scrollTop = msgs.scrollHeight;
-      }
-
-      // Simple navbar scroll only
-      window.addEventListener('scroll', function() {
-          const navbar = document.getElementById('navbar');
-	  if (window.scrollY > 50) {
-	      navbar.classList.add('scrolled');
-	  } else {
-	      navbar.classList.remove('scrolled');
-	  }
+        });
       });
 
-      // Verify Daimon elements exist
-      console.log('Daimon elements check:', {
-          button: !!document.getElementById('daimonBtn'),
-	  box: !!document.getElementById('daimonBox'),
-	  input: !!document.getElementById('daimonIn')
+      // Enter key support for chat inputs
+      document.getElementById('daimonIn').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') sendDaimon();
       });
 
-      // Verify Avvocato elements exist
-      console.log('Avvocato elements check:', {
-          button: !!document.getElementById('avvocatoBtn'),
-	  box: !!document.getElementById('avvocatoBox'),
-	  input: !!document.getElementById('avvocatoIn')
+      document.getElementById('avvocatoIn').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') sendAvvocato();
       });
 
-      console.log('AngleNexus with Daimon and Avvocato loaded');
-      </script>
-  </body>
-  </html>
+      document.getElementById('weaverIn').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') sendWeaver();
+      });
+
+      console.log('AngleNexus initialized successfully');
+    });
+
+  </script>
+</body>
+
+</html>
