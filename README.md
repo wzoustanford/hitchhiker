@@ -20,14 +20,6 @@ Reference: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4941906
 ---------- 
 
 [working notes] 
-Web server:
-cd ~/www/
-python3  -m http.server 8080
-
-
-source venv/bin/activate
-python3 -m web.main
-
 
 Working repository - RL with enrivonment feedback alignment 
 
@@ -83,8 +75,6 @@ for the pairwise tuples, choose using combinatory sampling to make sure there ar
 ]
 
 Listwise: [for later] 
-
-Okay now this data could be collected. How do we fine-tune the LLM after the data is there? 
 
 Elementwise: 
 We could use the r's without normalization, the are already normalized to $1.0 dollar value. 
