@@ -11,10 +11,6 @@ The results show that the hallucination is reduced, and the model is more aligne
 <img width="950" height="961" alt="image" src="https://github.com/user-attachments/assets/9594da17-394b-4b54-aa31-4d341283fe32" />
 <img width="693" height="135" alt="image" src="https://github.com/user-attachments/assets/3062e6a4-7c86-41b4-8423-a8dbb8fc2a2c" />
 
-More information in the 1-pager pdf in the folder. 
-
-Reference: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4941906 
-
 [don't read below]
 
 ---------- 
